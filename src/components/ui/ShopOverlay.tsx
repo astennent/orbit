@@ -240,6 +240,11 @@ export const ShopOverlay: React.FC<ShopOverlayProps> = ({
                 <div className="readout-stat">COST: <strong className="text-gold font-orbitron">{hoveredUpgrade.cost} DATA CORES</strong></div>
                 <div className="readout-stat">REFUND VALUE: <strong className="text-gold font-orbitron">{Math.floor(hoveredUpgrade.cost / 2)} CORES</strong></div>
                 <p className="readout-desc">{hoveredUpgrade.desc}</p>
+                {hoveredUpgrade.blurb && (
+                  <div className="readout-blurb" style={{ fontStyle: 'italic', fontSize: '10.5px', color: 'var(--chrome-dim)', borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: '8px', paddingTop: '8px', lineHeight: '1.4' }}>
+                    "{hoveredUpgrade.blurb}"
+                  </div>
+                )}
               </div>
             ) : (
               <div className="readout-idle">

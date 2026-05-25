@@ -49,6 +49,7 @@ export interface Probe {
   integrity: number;
   maxIntegrity: number;
   magnetRadius: number;
+  scoopActiveTimer?: number;
 }
 
 export interface Planet {
@@ -128,6 +129,7 @@ export interface UpgradeEntry {
   cost: number;
   color: string;
   desc: string;
+  blurb?: string;
   triggerId?: TriggerId;
   image?: string;
 }

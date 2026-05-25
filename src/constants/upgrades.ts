@@ -16,6 +16,7 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
     cost: 3,
     color: 'var(--glow-cyan)',
     desc: "Increases data collection rate by 10x for 3 seconds.",
+    blurb: "Sucking up atmospheric particles at terminal velocity. Don't inhale the space dust!",
     triggerId: TriggerId.LEAVE_ATMOSPHERE,
     image: atmosphericScoopImg
   },
@@ -27,6 +28,7 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
     cost: 4,
     color: 'var(--glow-green)',
     desc: "Boosts speed by 10% and restores 1 hull integrity.",
+    blurb: "Fuel is for cowards. True pilots fly on collision-boosts!",
     triggerId: TriggerId.HIT_BEACON,
     image: ramjetImg
   },
@@ -38,6 +40,7 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
     cost: 3,
     color: 'var(--glow-orange)',
     desc: "Generates 100 bonus data.",
+    blurb: "When you hit rock bottom, bounce back with a stack of sweet, sweet numbers.",
     triggerId: TriggerId.PLANET_BOUNCE,
     image: gravityStabilizerImg
   },
@@ -49,6 +52,7 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
     cost: 5,
     color: '#ff4757',
     desc: "Instantly recovers 300 data.",
+    blurb: "Sure, your probe exploded, but the telemetry logs are absolutely gorgeous.",
     triggerId: TriggerId.PROBE_DEATH,
     image: blackBoxImg
   },
@@ -60,6 +64,7 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
     cost: 4,
     color: '#2ed573',
     desc: "Restores 10 hull integrity (active on gas giant planets).",
+    blurb: "Designed to take a beating from heavy helium winds. Smells slightly like old balloons.",
     triggerId: TriggerId.ENTER_GAS_PLANET,
     image: windShieldImg
   },
@@ -71,6 +76,7 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
     cost: 3,
     color: '#a0a0ff',
     desc: "Increases probe's magnet collection range by +1.0.",
+    blurb: "A gigantic electromagnet duct-taped to the front hull. What could go wrong?",
     triggerId: TriggerId.HIT_BEACON,
     image: magnetoScrapperImg
   },
@@ -85,7 +91,8 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
     type: 'hack',
     cost: 2,
     color: 'var(--gold-shiny)',
-    desc: 'Grants +1 bonus Data Core on win.'
+    desc: 'Grants +1 bonus Data Core on win.',
+    blurb: "A fuzzy green dice dangling inside the control deck. 100% scientifically proven."
   },
   [HackId.DEEP_SPACE_SENSOR]: {
     id: HackId.DEEP_SPACE_SENSOR,
@@ -94,7 +101,8 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
     type: 'hack',
     cost: 4,
     color: 'var(--glow-cyan)',
-    desc: 'Doubles the rate of data generation over time.'
+    desc: 'Doubles the rate of data generation over time.',
+    blurb: "Like wearing high-prescription reading glasses, but for the entire sector."
   }
   // TODO The Death-Rattle Loop: On probe death, trigger all 'on probe death' items again
   // TODO Overclocked Oscillator: Every second, force-trigger a random module

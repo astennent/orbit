@@ -21,6 +21,7 @@ export function createFreshProbe(
     trail: trail.map(p => p.clone()),
     integrity: 10,
     maxIntegrity: 10,
-    magnetRadius: DEFAULT_MAGNET_RADIUS
+    magnetRadius: DEFAULT_MAGNET_RADIUS,
+    scoopActiveTimer: 0
   }
 }

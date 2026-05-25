@@ -36,23 +36,30 @@ export function handleTrigger(
 function executeModuleEffect(moduleId: ModuleId, pState: Probe, context: TriggerContext) {
   switch (moduleId) {
     case ModuleId.ATMOSPHERIC_SCOOP:
-      console.log("Triggered ATMOSPHERIC_SCOOP stub!");
-      context.triggerDataToast("ATMOSPHERIC SCOOP: STUB ACTIVE", pState.pos, 'var(--glow-cyan)');
+      console.log("Triggered ATMOSPHERIC_SCOOP! 10x data boost active for 3s.");
+      pState.scoopActiveTimer = 3.0;
+      context.triggerDataToast("ATMOSPHERIC SCOOP: 10x DATA BOOST ACTIVE!", pState.pos, 'var(--glow-cyan)');
       break;
 
     case ModuleId.RAMJET:
-      console.log("Triggered RAMJET stub!");
-      context.triggerDataToast("RAMJET: STUB ACTIVE", pState.pos, 'var(--glow-green)');
+      console.log("Triggered RAMJET! +10% velocity, +1 hull integrity.");
+      pState.vel.multiplyScalar(1.10);
+      pState.integrity = Math.min(pState.maxIntegrity, pState.integrity + 1);
+      context.triggerDataToast("RAMJET: +10% SPEED & HULL RESTORED", pState.pos, 'var(--glow-green)');
       break;
 
     case ModuleId.GRAVITY_STABILIZER:
-      console.log("Triggered GRAVITY_STABILIZER stub!");
-      context.triggerDataToast("GRAVITY STABILIZER: STUB ACTIVE", pState.pos, 'var(--glow-orange)');
+      console.log("Triggered GRAVITY_STABILIZER! Collecting 100 data and absorbing bounce impact.");
+      pState.data += 100;
+      // Absorbs 3 out of 5 damage by restoring 3 integrity
+      pState.integrity = Math.min(pState.maxIntegrity, pState.integrity + 3);
+      context.triggerDataToast("GRAVITY STABILIZER: +100 DATA & IMPACT SHIELD!", pState.pos, 'var(--glow-orange)');
       break;
 
     case ModuleId.BLACK_BOX:
-      console.log("Triggered BLACK_BOX stub!");
-      context.triggerDataToast("BLACK BOX: STUB ACTIVE", pState.pos, '#ff4757');
+      console.log("Triggered BLACK_BOX! Collecting 300 data.");
+      pState.data += 300;
+      context.triggerDataToast("BLACK BOX: +300 DATA SECURED", pState.pos, '#ff4757');
       break;
 
     case ModuleId.WIND_SHIELD:

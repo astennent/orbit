@@ -146,6 +146,7 @@ export function usePhysicsLoop({
             hitPlanet = true
             handleTrigger(TriggerId.PLANET_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
             handleTrigger(TriggerId.PROBE_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
+            pState.vel.set(0, 0, 0); // Stop probe movement on death!
           } else {
             handleTrigger(TriggerId.PLANET_BOUNCE, pState, purchasedUpgradesRef.current, { triggerDataToast });
           }
@@ -166,6 +167,8 @@ export function usePhysicsLoop({
       }
 
       if (hitPlanet) {
+        probeRef.current = pState
+        setProbe(pState)
         if (pState.data >= SECTOR_QUOTA) {
           gameStateRef.current = 'WIN'
           setGameState('WIN')
@@ -193,6 +196,10 @@ export function usePhysicsLoop({
       if (pState.pos.length() > OUT_OF_BOUNDS_LIMIT) {
         handleTrigger(TriggerId.OUT_OF_BOUNDS, pState, purchasedUpgradesRef.current, { triggerDataToast });
         pState.integrity = 0;
+        pState.vel.set(0, 0, 0); // Stop probe movement on death!
+        handleTrigger(TriggerId.PROBE_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
+        probeRef.current = pState
+        setProbe(pState)
         if (pState.data >= SECTOR_QUOTA) {
           gameStateRef.current = 'WIN'
           setGameState('WIN')
@@ -238,11 +245,19 @@ export function usePhysicsLoop({
       }
       wasInsideAtmosphereRef.current = insideAtmosphere;
 
+      // Decrement scoop active timer if active
+      if (pState.scoopActiveTimer !== undefined && pState.scoopActiveTimer > 0) {
+        pState.scoopActiveTimer = Math.max(0, pState.scoopActiveTimer - PHYSICS_DT);
+      }
+
       let timeRate = 1.5
       if (purchasedUpgradesRef.current.includes(HackId.DEEP_SPACE_SENSOR)) {
         timeRate *= 2.0
       }
       if (insideAtmosphere) {
+        timeRate *= 10.0
+      }
+      if (pState.scoopActiveTimer !== undefined && pState.scoopActiveTimer > 0) {
         timeRate *= 10.0
       }
 
@@ -319,6 +334,7 @@ export function usePhysicsLoop({
           if (pState.integrity <= 0) {
             hitDestroyedShip = true
             handleTrigger(TriggerId.PROBE_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
+            pState.vel.set(0, 0, 0); // Stop probe movement on death!
           }
 
           let baseDataRewards = ast.type === 'metallic' ? (15 + Math.random() * 35) : (10 + Math.random() * 20)
@@ -375,6 +391,8 @@ export function usePhysicsLoop({
       }
 
       if (hitDestroyedShip) {
+        probeRef.current = pState
+        setProbe(pState)
         if (pState.data >= SECTOR_QUOTA) {
           gameStateRef.current = 'WIN'
           setGameState('WIN')

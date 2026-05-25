@@ -66,6 +66,11 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
         <div style={{ fontSize: '10.5px', color: '#e0e0e0', fontFamily: 'var(--font-body)', lineHeight: '1.4' }}>
           {item.desc}
         </div>
+        {item.blurb && (
+          <div style={{ fontStyle: 'italic', fontSize: '9.5px', color: '#a0a5b5', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '6px', paddingTop: '6px', lineHeight: '1.3' }}>
+            "{item.blurb}"
+          </div>
+        )}
 
         {tooltipContext === 'shop-shelf' && (
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '8px', paddingTop: '6px', fontSize: '10px', color: '#ffd700', fontWeight: 'bold', textShadow: '0 0 5px rgba(255, 215, 0, 0.3)' }}>
