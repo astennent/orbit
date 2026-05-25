@@ -44,8 +44,12 @@ export const ShopOverlay: React.FC<ShopOverlayProps> = ({
 
   // Grouping upgrades for the shelves
   const topShelfHacks = [
-    UPGRADE_REGISTRY[HackId.LUCKY_CHARM],
-    UPGRADE_REGISTRY[HackId.DEEP_SPACE_SENSOR]
+    UPGRADE_REGISTRY[HackId.DEEP_SPACE_SENSOR],
+    UPGRADE_REGISTRY[HackId.DEATH_RATTLE_LOOP],
+    UPGRADE_REGISTRY[HackId.OVERCLOCKED_OSCILLATOR],
+    UPGRADE_REGISTRY[HackId.METRONOME_MALFUNCTION],
+    UPGRADE_REGISTRY[HackId.EJECTION_ROUTE_6],
+    UPGRADE_REGISTRY[HackId.SHORT_CIRCUIT]
   ];
 
   const middleShelfModules = [availableModules[0], availableModules[1]];

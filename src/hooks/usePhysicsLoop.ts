@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { Probe, Planet, ExitPortal, Beacon, Asteroid, DataToast, GameState, UpgradeId, ModuleId, HackId, TriggerId } from '../types'
-import { UPGRADE_REGISTRY } from '../constants/upgrades'
-import { handleTrigger } from '../utils/moduleEffects'
+import { Probe, Planet, ExitPortal, Beacon, Asteroid, DataToast, GameState, ModuleId, HackId, TriggerId } from '../types'
+import { UPGRADE_REGISTRY, MODULES_REGISTRY, HACKS_REGISTRY } from '../constants/upgrades'
+import { handleTrigger, executeModuleEffect } from '../utils/moduleEffects'
 import { createFreshProbe } from '../utils/probeUtils'
 import {
   GRAVITATIONAL_CONSTANT,
@@ -24,10 +24,12 @@ interface UsePhysicsLoopProps {
   planets: Planet[]
   portal: ExitPortal
   initialSector: { beacons: Beacon[]; asteroids: Asteroid[] }
-  purchasedUpgradesRef: React.MutableRefObject<UpgradeId[]>
-  setPurchasedUpgrades: React.Dispatch<React.SetStateAction<UpgradeId[]>>
   aimStartPos: THREE.Vector3
   onSecureDataCores: (cores: number) => void
+  activeModulesRef: React.MutableRefObject<(ModuleId | null)[]>
+  activeHacksRef: React.MutableRefObject<HackId[]>
+  setModuleSlots: React.Dispatch<React.SetStateAction<(ModuleId | null)[]>>
+  setHackSlots: React.Dispatch<React.SetStateAction<HackId[]>>
 }
 
 export function usePhysicsLoop({
@@ -37,10 +39,12 @@ export function usePhysicsLoop({
   planets,
   portal,
   initialSector,
-  purchasedUpgradesRef,
-  setPurchasedUpgrades,
   aimStartPos,
-  onSecureDataCores
+  onSecureDataCores,
+  activeModulesRef,
+  activeHacksRef,
+  setModuleSlots,
+  setHackSlots
 }: UsePhysicsLoopProps) {
   const [probe, setProbe] = useState<Probe>(() => createFreshProbe(aimStartPos))
 
@@ -55,6 +59,10 @@ export function usePhysicsLoop({
   const selfDestructTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const wasInsideAtmosphereRef = useRef(false)
   const activeCollidingPlanetIdRef = useRef<string | null>(null)
+
+  // Timers for active timed hacks
+  const oscillatorTimerRef = useRef(1.0)
+  const metronomeTimerRef = useRef(3.0)
 
   const triggerDataToast = (text: string, pos: THREE.Vector3, color?: string) => {
     const newToast: DataToast = {
@@ -89,13 +97,23 @@ export function usePhysicsLoop({
       gameStateRef.current = successState
       setGameState(successState)
       const earnedDataCores = Math.floor(pState.data / SECTOR_QUOTA)
-      const bonus = purchasedUpgradesRef.current.includes(HackId.LUCKY_CHARM) ? 1 : 0
-      console.log(`${contextName} Win! Data:`, pState.data, "Data Cores:", earnedDataCores, "Bonus:", bonus)
-      onSecureDataCores(earnedDataCores + bonus)
+      console.log(`${contextName} Win! Data:`, pState.data, "Data Cores:", earnedDataCores)
+      onSecureDataCores(earnedDataCores)
     } else {
       gameStateRef.current = lossState
       setGameState(lossState)
     }
+  }
+
+  // Wrapper to dispatch events to handleTrigger with the slots context
+  const dispatchTrigger = (triggerId: TriggerId, pState: Probe) => {
+    handleTrigger(
+      triggerId,
+      pState,
+      activeModulesRef.current,
+      activeHacksRef.current,
+      { triggerDataToast }
+    );
   }
 
   // Self-destruct action
@@ -162,7 +180,7 @@ export function usePhysicsLoop({
 
           // Trigger collision logic only if this is the first frame of contact
           if (activeCollidingPlanetIdRef.current !== planet.id) {
-            const gsCount = purchasedUpgradesRef.current.filter(id => id === ModuleId.GRAVITY_STABILIZER).length
+            const gsCount = activeModulesRef.current.filter(id => id === ModuleId.GRAVITY_STABILIZER).length
             const damage = Math.max(1, BASE_PLANET_DAMAGE - gsCount * GRAVITY_STABILIZER_SHIELD_ABSORPTION)
 
             pState.integrity = Math.max(0, pState.integrity - damage)
@@ -170,12 +188,12 @@ export function usePhysicsLoop({
 
             if (pState.integrity <= 0) {
               hitPlanet = true
-              handleTrigger(TriggerId.PLANET_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
-              handleTrigger(TriggerId.PROBE_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
-              handleTrigger(TriggerId.PROBE_DEATH_BY_COLLISION, pState, purchasedUpgradesRef.current, { triggerDataToast });
+              dispatchTrigger(TriggerId.PLANET_DEATH, pState);
+              dispatchTrigger(TriggerId.PROBE_DEATH, pState);
+              dispatchTrigger(TriggerId.PROBE_DEATH_BY_COLLISION, pState);
               pState.vel.set(0, 0, 0); // Stop probe movement on death!
             } else {
-              handleTrigger(TriggerId.PLANET_BOUNCE, pState, purchasedUpgradesRef.current, { triggerDataToast });
+              dispatchTrigger(TriggerId.PLANET_BOUNCE, pState);
             }
           }
           break
@@ -232,10 +250,10 @@ export function usePhysicsLoop({
 
       // 3.5. Out of bounds checking
       if (pState.pos.length() > OUT_OF_BOUNDS_LIMIT) {
-        handleTrigger(TriggerId.OUT_OF_BOUNDS, pState, purchasedUpgradesRef.current, { triggerDataToast });
+        dispatchTrigger(TriggerId.OUT_OF_BOUNDS, pState);
         pState.integrity = 0;
         pState.vel.set(0, 0, 0); // Stop probe movement on death!
-        handleTrigger(TriggerId.PROBE_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
+        dispatchTrigger(TriggerId.PROBE_DEATH, pState);
         probeRef.current = pState
         setProbe(pState)
         if (pState.data < SECTOR_QUOTA) {
@@ -261,14 +279,52 @@ export function usePhysicsLoop({
       // Atmospheric Transitions
       if (insideAtmosphere && !wasInsideAtmosphereRef.current) {
         if (currentAtmospherePlanet?.isGasGiant) {
-          handleTrigger(TriggerId.ENTER_GAS_PLANET, pState, purchasedUpgradesRef.current, { triggerDataToast });
+          dispatchTrigger(TriggerId.ENTER_GAS_PLANET, pState);
         } else {
-          handleTrigger(TriggerId.ENTER_ATMOSPHERE, pState, purchasedUpgradesRef.current, { triggerDataToast });
+          dispatchTrigger(TriggerId.ENTER_ATMOSPHERE, pState);
         }
       } else if (!insideAtmosphere && wasInsideAtmosphereRef.current) {
-        handleTrigger(TriggerId.LEAVE_ATMOSPHERE, pState, purchasedUpgradesRef.current, { triggerDataToast });
+        dispatchTrigger(TriggerId.LEAVE_ATMOSPHERE, pState);
       }
       wasInsideAtmosphereRef.current = insideAtmosphere;
+
+      // Timed Hacks Integration (Oscillator & Metronome)
+      const oscillatorCount = activeHacksRef.current.filter(id => id === HackId.OVERCLOCKED_OSCILLATOR).length;
+      if (oscillatorCount > 0) {
+        oscillatorTimerRef.current -= PHYSICS_DT;
+        if (oscillatorTimerRef.current <= 0) {
+          oscillatorTimerRef.current = 1.0;
+          for (let j = 0; j < oscillatorCount; j++) {
+            const equippedIdxs: number[] = [];
+            activeModulesRef.current.forEach((m, idx) => {
+              if (m !== null) equippedIdxs.push(idx);
+            });
+            if (equippedIdxs.length > 0) {
+              const randIdx = equippedIdxs[Math.floor(Math.random() * equippedIdxs.length)];
+              const randomModuleId = activeModulesRef.current[randIdx] as ModuleId;
+              console.log(`[Overclocked Oscillator Hack] Triggering Slot ${randIdx + 1}: ${randomModuleId}`);
+              triggerDataToast(`⚡ OSCILLATOR: ${UPGRADE_REGISTRY[randomModuleId].name.toUpperCase()}`, pState.pos, '#ffea00');
+              executeModuleEffect(randIdx, randomModuleId, pState, { triggerDataToast, forceTriggered: true });
+            }
+          }
+        }
+      }
+
+      const metronomeCount = activeHacksRef.current.filter(id => id === HackId.METRONOME_MALFUNCTION).length;
+      if (metronomeCount > 0) {
+        metronomeTimerRef.current -= PHYSICS_DT;
+        if (metronomeTimerRef.current <= 0) {
+          metronomeTimerRef.current = 3.0;
+          for (let j = 0; j < metronomeCount; j++) {
+            const slot3Module = activeModulesRef.current[2];
+            if (slot3Module) {
+              console.log(`[Metronome Malfunction Hack] Triggering Slot 3: ${slot3Module}`);
+              triggerDataToast(`⏱ METRONOME: ${UPGRADE_REGISTRY[slot3Module].name.toUpperCase()}`, pState.pos, '#00ff66');
+              executeModuleEffect(2, slot3Module, pState, { triggerDataToast, forceTriggered: true });
+            }
+          }
+        }
+      }
 
       // Decrement scoop active timer if active
       if (pState.scoopActiveTimer !== undefined && pState.scoopActiveTimer > 0) {
@@ -276,8 +332,9 @@ export function usePhysicsLoop({
       }
 
       let timeRate = 1.5
-      if (purchasedUpgradesRef.current.includes(HackId.DEEP_SPACE_SENSOR)) {
-        timeRate *= 2.0
+      const sensorCount = activeHacksRef.current.filter(id => id === HackId.DEEP_SPACE_SENSOR).length;
+      if (sensorCount > 0) {
+        timeRate *= Math.pow(2, sensorCount);
       }
       if (insideAtmosphere) {
         timeRate *= 10.0
@@ -314,7 +371,7 @@ export function usePhysicsLoop({
           triggerDataToast(`+${addedData.toFixed(0)} Data`, dp.pos, color);
 
           // Dispatch HIT_BEACON
-          handleTrigger(TriggerId.HIT_BEACON, pState, purchasedUpgradesRef.current, { triggerDataToast });
+          dispatchTrigger(TriggerId.HIT_BEACON, pState);
 
           return { ...dp, collected: true }
         } else if (dist < pState.magnetRadius) {
@@ -354,12 +411,12 @@ export function usePhysicsLoop({
           triggerDataToast(`-${finalDamage} Hull`, pState.pos, '#ff4757')
 
           // Dispatch HIT_ASTEROID
-          handleTrigger(TriggerId.HIT_ASTEROID, pState, purchasedUpgradesRef.current, { triggerDataToast });
+          dispatchTrigger(TriggerId.HIT_ASTEROID, pState);
 
           if (pState.integrity <= 0) {
             hitDestroyedShip = true
-            handleTrigger(TriggerId.PROBE_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
-            handleTrigger(TriggerId.PROBE_DEATH_BY_COLLISION, pState, purchasedUpgradesRef.current, { triggerDataToast });
+            dispatchTrigger(TriggerId.PROBE_DEATH, pState);
+            dispatchTrigger(TriggerId.PROBE_DEATH_BY_COLLISION, pState);
             pState.vel.set(0, 0, 0); // Stop probe movement on death!
           }
 
@@ -371,7 +428,6 @@ export function usePhysicsLoop({
           const toastColor = ast.type === 'metallic' ? '#ffd700' : ast.type === 'ice' ? '#00ffcc' : '#ffffff'
           triggerDataToast(`+${finalData.toFixed(0)} Data`, ast.pos, toastColor)
 
-          const ownedUpgrades = purchasedUpgradesRef.current
           const hackChance = (ast.type === 'metallic' ? 0.10 : ast.type === 'carbon' ? 0.05 : 0.03) + (ast.size === 'large' ? 0.10 : ast.size === 'medium' ? 0.05 : 0.0)
           const modChance = (ast.type === 'metallic' ? 0.0 : ast.type === 'carbon' ? 0.15 : 0.10) + (ast.size === 'large' ? 0.10 : ast.size === 'medium' ? 0.05 : 0.0)
 
@@ -379,34 +435,27 @@ export function usePhysicsLoop({
           const rollMod = Math.random() < modChance
 
           if (rollHack) {
-            const allHacks = [HackId.LUCKY_CHARM, HackId.DEEP_SPACE_SENSOR]
-            const unownedHacks = allHacks.filter(p => !ownedUpgrades.includes(p))
-            if (unownedHacks.length > 0) {
-              const droppedHackId = unownedHacks[Math.floor(Math.random() * unownedHacks.length)]
-              const droppedHack = UPGRADE_REGISTRY[droppedHackId]
-              setPurchasedUpgrades(current => [...current, droppedHackId])
-              purchasedUpgradesRef.current = [...purchasedUpgradesRef.current, droppedHackId]
-              triggerDataToast(`+${droppedHack.name} Hack!`, ast.pos, '#ffd700')
-            } else {
-              pState.data += 30
-              triggerDataToast(`+30 Data Bonus!`, ast.pos, '#ffd700')
-            }
+            const randomHack = HACKS_REGISTRY[Math.floor(Math.random() * HACKS_REGISTRY.length)]
+            triggerDataToast(`LOOTED HACK: ${randomHack.name.toUpperCase()}`, ast.pos, randomHack.color)
+            setHackSlots(prev => [...prev, randomHack.id as HackId])
           } else if (rollMod) {
-            const allModules = [ModuleId.ATMOSPHERIC_SCOOP, ModuleId.RAMJET, ModuleId.GRAVITY_STABILIZER, ModuleId.BLACK_BOX, ModuleId.WIND_SHIELD]
-            const unownedModules = allModules.filter(m => !ownedUpgrades.includes(m))
-            if (unownedModules.length > 0) {
-              const droppedModId = unownedModules[Math.floor(Math.random() * unownedModules.length)]
-              const droppedMod = UPGRADE_REGISTRY[droppedModId]
-              setPurchasedUpgrades(current => [...current, droppedModId])
-              purchasedUpgradesRef.current = [...purchasedUpgradesRef.current, droppedModId]
-              triggerDataToast(`+${droppedMod.name} Module!`, ast.pos, '#ffd700')
+            const randomMod = MODULES_REGISTRY[Math.floor(Math.random() * MODULES_REGISTRY.length)]
+            const emptyIdx = activeModulesRef.current.indexOf(null)
+            if (emptyIdx !== -1) {
+              triggerDataToast(`LOOTED MODULE: ${randomMod.name.toUpperCase()}`, ast.pos, randomMod.color)
+              setModuleSlots(prev => {
+                const next = [...prev]
+                const firstEmpty = next.indexOf(null)
+                if (firstEmpty !== -1) {
+                  next[firstEmpty] = randomMod.id as ModuleId
+                }
+                return next
+              })
             } else {
-              pState.data += 40
-              triggerDataToast(`+40 Data Bonus!`, ast.pos, '#ffd700')
+              pState.data += 100
+              triggerDataToast(`SLOTS FULL! +100 DATA`, ast.pos, '#ffd700')
             }
           }
-
-          return { ...ast, health: 0 }
         }
         return ast
       })

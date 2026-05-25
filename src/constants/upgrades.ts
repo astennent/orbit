@@ -84,16 +84,6 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
   // TODO: Asteroid extrapolator: Grants +1 data for each asteroid hit this entire run, triggered on hit_asteroid
   // TODO: Autoturret: Fires a rocket at the nearest asteroid every 1 second
   // TODO: Deep space plunger: When going out of bounds, fires a mini drone with 1 hp and 6 seconds of battery backward directly toward each planet.
-  [HackId.LUCKY_CHARM]: {
-    id: HackId.LUCKY_CHARM,
-    name: 'Lucky Charm',
-    short: '★',
-    type: 'hack',
-    cost: 2,
-    color: 'var(--gold-shiny)',
-    desc: 'Grants +1 bonus Data Core on win.',
-    blurb: "A fuzzy green dice dangling inside the control deck. 100% scientifically proven."
-  },
   [HackId.DEEP_SPACE_SENSOR]: {
     id: HackId.DEEP_SPACE_SENSOR,
     name: 'Deep Space Sensor',
@@ -103,12 +93,57 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
     color: 'var(--glow-cyan)',
     desc: 'Doubles the rate of data generation over time.',
     blurb: "Like wearing high-prescription reading glasses, but for the entire sector."
+  },
+  [HackId.DEATH_RATTLE_LOOP]: {
+    id: HackId.DEATH_RATTLE_LOOP,
+    name: 'Death-Rattle Loop',
+    short: '☠',
+    type: 'hack',
+    cost: 5,
+    color: '#ff3333',
+    desc: 'On probe death, triggers all active death-triggered modules an extra time.',
+    blurb: "Makes the ultimate catastrophic failure extremely productive."
+  },
+  [HackId.OVERCLOCKED_OSCILLATOR]: {
+    id: HackId.OVERCLOCKED_OSCILLATOR,
+    name: 'Overclocked Oscillator',
+    short: '⚡',
+    type: 'hack',
+    cost: 6,
+    color: '#ffea00',
+    desc: 'Every 1 second of flight, triggers a random equipped module.',
+    blurb: "Chaos in a bottle. Keep away from flammable materials."
+  },
+  [HackId.METRONOME_MALFUNCTION]: {
+    id: HackId.METRONOME_MALFUNCTION,
+    name: 'Metronome Malfunction',
+    short: '⏱',
+    type: 'hack',
+    cost: 4,
+    color: '#00ff66',
+    desc: 'Every 3 seconds of flight, triggers the module in Slot #3.',
+    blurb: "Tick, tock, tick, BOOM. Highly predictable instability."
+  },
+  [HackId.EJECTION_ROUTE_6]: {
+    id: HackId.EJECTION_ROUTE_6,
+    name: 'Ejection Route #6',
+    short: '➏',
+    type: 'hack',
+    cost: 5,
+    color: '#ff00ff',
+    desc: 'On probe death, triggers the module in Slot #6 three times.',
+    blurb: "The ultimate backup plan, wired directly to the ejection seat."
+  },
+  [HackId.SHORT_CIRCUIT]: {
+    id: HackId.SHORT_CIRCUIT,
+    name: 'Short-Circuit',
+    short: '↯',
+    type: 'hack',
+    cost: 4,
+    color: '#00ffff',
+    desc: 'On beacon collection, grants a 5% chance to trigger a random module.',
+    blurb: "A spark here, a spark there, and suddenly the engines are roaring."
   }
-  // TODO The Death-Rattle Loop: On probe death, trigger all 'on probe death' items again
-  // TODO Overclocked Oscillator: Every second, force-trigger a random module
-  // TODO Metronome Malfunction: Every 3 seconds: Trigger the module in Slot #3"
-  // TODO Ejection Route #6: On probe death, trigger the module in Slot #6 three times
-  // TODO Short-Circuit: On beacon collection, 5% chance to trigger 
 }
 
 export const ALL_UPGRADES = Object.values(UPGRADE_REGISTRY)

@@ -1,11 +1,10 @@
 import React from 'react'
-import { GameState, UpgradeId } from '../../types'
+import { GameState } from '../../types'
 import { getBannerMessage } from '../../utils/statusFormatters'
 
 interface OutcomeBannerProps {
   gameState: GameState
   probeData: number
-  purchasedUpgrades: UpgradeId[]
   showSelfDestruct: boolean
   onSelfDestruct: () => void
   onNextSector: () => void
@@ -15,7 +14,6 @@ interface OutcomeBannerProps {
 export const OutcomeBanner: React.FC<OutcomeBannerProps> = ({
   gameState,
   probeData,
-  purchasedUpgrades,
   showSelfDestruct,
   onSelfDestruct,
   onNextSector,
@@ -28,7 +26,7 @@ export const OutcomeBanner: React.FC<OutcomeBannerProps> = ({
     return null
   }
 
-  const bannerMsg = getBannerMessage(gameState, probeData, purchasedUpgrades)
+  const bannerMsg = getBannerMessage(gameState, probeData)
 
   return (
     <div style={{
@@ -44,25 +42,25 @@ export const OutcomeBanner: React.FC<OutcomeBannerProps> = ({
       gap: '10px'
     }}>
       {gameState === 'FLIGHT' ? (
-        <button 
-          className="btn-arcade danger" 
-          style={{ fontSize: '14px', padding: '10px 24px', letterSpacing: '1px' }} 
+        <button
+          className="btn-arcade danger"
+          style={{ fontSize: '14px', padding: '10px 24px', letterSpacing: '1px' }}
           onClick={onSelfDestruct}
         >
           🚨 SELF-DESTRUCT
         </button>
       ) : (gameState === 'WIN' || gameState === 'PORTAL_EXIT') ? (
-        <button 
-          className="btn-arcade success" 
-          style={{ fontSize: '14px', padding: '10px 24px', letterSpacing: '1px' }} 
+        <button
+          className="btn-arcade success"
+          style={{ fontSize: '14px', padding: '10px 24px', letterSpacing: '1px' }}
           onClick={onNextSector}
         >
           🚀 NEXT SECTOR
         </button>
       ) : (
-        <button 
-          className="btn-arcade" 
-          style={{ fontSize: '14px', padding: '10px 24px', letterSpacing: '1px' }} 
+        <button
+          className="btn-arcade"
+          style={{ fontSize: '14px', padding: '10px 24px', letterSpacing: '1px' }}
           onClick={onResetProbe}
         >
           🔄 RESET PROBE

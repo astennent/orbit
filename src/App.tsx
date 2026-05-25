@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { GameState, UpgradeId, UpgradeEntry } from './types'
+import { GameState, UpgradeEntry, ModuleId, HackId } from './types'
 import { GameCanvas } from './components/canvas/GameCanvas'
 import { generatePlanets, generateExitPortal, generateBeacons, generateAsteroids } from './utils/levelGenerator'
 import { ShopOverlay } from './components/ui/ShopOverlay'
@@ -19,7 +19,7 @@ import { UPGRADE_REGISTRY } from './constants/upgrades'
 export default function App() {
   // --- Core Game State React Hooks ---
   const [gameState, setGameState] = useState<GameState>('IDLE')
-  
+
   const [dataCores, setDataCores] = useState<number>(() => {
     try {
       const saved = localStorage.getItem('orbit_data_cores')
@@ -29,7 +29,7 @@ export default function App() {
     }
   })
 
-  const [moduleSlots, setModuleSlots] = useState<(UpgradeId | null)[]>(() => {
+  const [moduleSlots, setModuleSlots] = useState<(ModuleId | null)[]>(() => {
     try {
       const saved = localStorage.getItem('orbit_module_slots')
       return saved ? JSON.parse(saved) : [null, null, null, null, null, null]
@@ -38,7 +38,7 @@ export default function App() {
     }
   })
 
-  const [hackSlots, setHackSlots] = useState<UpgradeId[]>(() => {
+  const [hackSlots, setHackSlots] = useState<HackId[]>(() => {
     try {
       const saved = localStorage.getItem('orbit_hack_slots')
       return saved ? JSON.parse(saved) : []
@@ -46,6 +46,18 @@ export default function App() {
       return []
     }
   })
+
+  // --- Game Engine Refs (to prevent stale React closures at 60fps) ---
+  const activeModulesRef = useRef<(ModuleId | null)[]>(moduleSlots)
+  const activeHacksRef = useRef<HackId[]>(hackSlots)
+
+  useEffect(() => {
+    activeModulesRef.current = moduleSlots
+  }, [moduleSlots])
+
+  useEffect(() => {
+    activeHacksRef.current = hackSlots
+  }, [hackSlots])
 
   const [level, setLevel] = useState<number>(() => {
     try {
@@ -56,12 +68,6 @@ export default function App() {
     }
   })
 
-  // Derive all owned upgrades list for back-compat with physics loops
-  const purchasedUpgrades = [
-    ...moduleSlots.filter((id): id is UpgradeId => id !== null),
-    ...hackSlots
-  ]
-  
   const aimStartPos = useRef(new THREE.Vector3(-12, 0, 5)).current
 
   // Shared initial sector matching loaded level
@@ -70,8 +76,8 @@ export default function App() {
     try {
       const saved = localStorage.getItem('orbit_level')
       if (saved) savedLevel = Math.max(1, parseInt(saved, 10))
-    } catch (e) {}
-    
+    } catch (e) { }
+
     const p = generatePlanets(savedLevel)
     const port = generateExitPortal(p)
     const d = generateBeacons(p)
@@ -83,10 +89,8 @@ export default function App() {
   const [portal, setPortal] = useState(initialSector.portal)
   const [isShopOpen, setIsShopOpen] = useState(false)
 
-  // --- Game Engine Refs (to prevent stale React closures at 60fps) ---
   const gameStateRef = useRef<GameState>('IDLE')
   const dataCoresRef = useRef<number>(0)
-  const purchasedUpgradesRef = useRef<UpgradeId[]>([])
 
   useEffect(() => {
     gameStateRef.current = gameState
@@ -95,10 +99,6 @@ export default function App() {
   useEffect(() => {
     dataCoresRef.current = dataCores
   }, [dataCores])
-
-  useEffect(() => {
-    purchasedUpgradesRef.current = purchasedUpgrades
-  }, [purchasedUpgrades])
 
   // --- Persistent Storage Sync ---
   useEffect(() => {
@@ -133,31 +133,6 @@ export default function App() {
     }
   }, [hackSlots])
 
-  // Custom interceptor to handle physics loot drops and slot them automatically
-  const handleLootInject: React.Dispatch<React.SetStateAction<UpgradeId[]>> = (updater) => {
-    const tempCurrent = [
-      ...moduleSlots.filter((id): id is UpgradeId => id !== null),
-      ...hackSlots
-    ]
-    const updated = typeof updater === 'function' ? updater(tempCurrent) : updater
-    const droppedId = updated[updated.length - 1]
-    if (!droppedId) return
-    
-    const upgrade = UPGRADE_REGISTRY[droppedId]
-    if (upgrade.type === 'module') {
-      setModuleSlots(prev => {
-        const next = [...prev]
-        const emptyIdx = next.indexOf(null)
-        if (emptyIdx !== -1) {
-          next[emptyIdx] = droppedId
-        }
-        return next
-      })
-    } else {
-      setHackSlots(prev => [...prev, droppedId])
-    }
-  }
-
   // --- Physics Loop Custom Hook Integration ---
   const {
     probe,
@@ -181,12 +156,14 @@ export default function App() {
     planets,
     portal,
     initialSector,
-    purchasedUpgradesRef,
-    setPurchasedUpgrades: handleLootInject,
     aimStartPos,
     onSecureDataCores: (cores) => {
       setDataCores(current => Math.min(100, current + cores))
-    }
+    },
+    activeModulesRef,
+    activeHacksRef,
+    setModuleSlots,
+    setHackSlots
   })
 
   // --- Aiming Slingshot Interactivity Hook Integration ---
@@ -219,13 +196,13 @@ export default function App() {
   const advanceLevel = () => {
     const nextLevel = level + 1
     setLevel(nextLevel)
-    
+
     const newPlanets = generatePlanets(nextLevel)
     setPlanets(newPlanets)
-    
+
     const newPortal = generateExitPortal(newPlanets)
     setPortal(newPortal)
-    
+
     const newBeacons = generateBeacons(newPlanets)
     setBeacons(newBeacons)
     beaconsRef.current = newBeacons
@@ -263,12 +240,12 @@ export default function App() {
       if (slotIndex !== undefined) {
         setModuleSlots(prev => {
           const next = [...prev]
-          next[slotIndex] = upgrade.id
+          next[slotIndex] = upgrade.id as ModuleId
           return next
         })
       }
     } else {
-      setHackSlots(prev => [...prev, upgrade.id])
+      setHackSlots(prev => [...prev, upgrade.id as HackId])
     }
   }
 
@@ -341,13 +318,13 @@ export default function App() {
     setModuleSlots([null, null, null, null, null, null])
     setHackSlots([])
     setLevel(1)
-    
+
     const freshPlanets = generatePlanets(1)
     setPlanets(freshPlanets)
-    
+
     const freshPortal = generateExitPortal(freshPlanets)
     setPortal(freshPortal)
-    
+
     const freshBeacons = generateBeacons(freshPlanets)
     setBeacons(freshBeacons)
     beaconsRef.current = freshBeacons
@@ -428,7 +405,6 @@ export default function App() {
       <OutcomeBanner
         gameState={gameState}
         probeData={probe.data}
-        purchasedUpgrades={purchasedUpgrades}
         showSelfDestruct={showSelfDestruct}
         onSelfDestruct={handleSelfDestruct}
         onNextSector={handleNextLevel}

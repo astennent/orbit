@@ -1,9 +1,10 @@
-import { TriggerId, Probe, ModuleId, UpgradeId } from '../types';
+import { TriggerId, Probe, ModuleId, HackId } from '../types';
 import { UPGRADE_REGISTRY } from '../constants/upgrades';
 import * as THREE from 'three';
 
-interface TriggerContext {
+export interface TriggerContext {
   triggerDataToast: (text: string, pos: THREE.Vector3, color?: string) => void;
+  forceTriggered?: boolean;
 }
 
 /**
@@ -13,19 +14,72 @@ interface TriggerContext {
 export function handleTrigger(
   triggerId: TriggerId,
   pState: Probe,
-  inventory: UpgradeId[],
+  activeModules: (ModuleId | null)[],
+  activeHacks: HackId[],
   context: TriggerContext
 ) {
   console.log(`[Event Dispatcher] Trigger fired: ${triggerId}`);
 
-  // Iterate over items in the Probe's inventory in order
-  for (const upgradeId of inventory) {
-    const upgrade = UPGRADE_REGISTRY[upgradeId];
-    if (!upgrade || upgrade.type !== 'module') continue;
+  const isDeathTrigger =
+    triggerId === TriggerId.PROBE_DEATH ||
+    triggerId === TriggerId.PROBE_DEATH_BY_COLLISION ||
+    triggerId === TriggerId.PLANET_DEATH;
 
-    // Check if this module is registered to handle this specific trigger
-    if (upgrade.triggerId === triggerId) {
-      executeModuleEffect(upgrade.id as ModuleId, pState, context);
+  // 1. Ejection Route #6 Hack: On probe death, trigger Slot 6 module three times per hack owned
+  if (isDeathTrigger) {
+    const ejectionCount = activeHacks.filter(id => id === HackId.EJECTION_ROUTE_6).length;
+    if (ejectionCount > 0) {
+      const slot6Module = activeModules[5];
+      if (slot6Module) {
+        console.log(`[Ejection Route #6 Hack] Triggering Slot 6 module three times per hack!`);
+        for (let j = 0; j < ejectionCount; j++) {
+          context.triggerDataToast("➏ EJECTION ROUTE #6 ACTIVE!", pState.pos, '#ff00ff');
+          for (let i = 0; i < 3; i++) {
+            executeModuleEffect(5, slot6Module, pState, context);
+          }
+        }
+      }
+    }
+  }
+
+  // 2. Short-Circuit Hack: On beacon collection, 5% chance per hack owned to trigger a random equipped module
+  if (triggerId === TriggerId.HIT_BEACON) {
+    const shortCount = activeHacks.filter(id => id === HackId.SHORT_CIRCUIT).length;
+    for (let j = 0; j < shortCount; j++) {
+      if (Math.random() < 0.05) {
+        const equippedIdxs: number[] = [];
+        activeModules.forEach((m, idx) => {
+          if (m !== null) equippedIdxs.push(idx);
+        });
+        if (equippedIdxs.length > 0) {
+          const randIdx = equippedIdxs[Math.floor(Math.random() * equippedIdxs.length)];
+          const randomModuleId = activeModules[randIdx] as ModuleId;
+          console.log(`[Short-Circuit Hack] Triggering random module: ${randomModuleId}`);
+          context.triggerDataToast(`↯ SHORT-CIRCUIT: ${UPGRADE_REGISTRY[randomModuleId].name.toUpperCase()}`, pState.pos, '#00ffff');
+          executeModuleEffect(randIdx, randomModuleId, pState, context);
+        }
+      }
+    }
+  }
+
+  // 3. Death-Rattle Loop Hack: On probe death, triggers all active death-triggered modules an extra time per hack owned
+  const deathRattleCount = activeHacks.filter(id => id === HackId.DEATH_RATTLE_LOOP).length;
+  const iterations = isDeathTrigger ? (1 + deathRattleCount) : 1;
+
+  for (let i = 0; i < iterations; i++) {
+    if (i > 0) {
+      console.log(`[Death-Rattle Loop Hack] Re-triggering death effects (Iteration ${i + 1})`);
+      context.triggerDataToast("☠ DEATH-RATTLE: DOUBLE TRIGGER!", pState.pos, '#ff3333');
+    }
+
+    for (let slotIdx = 0; slotIdx < activeModules.length; slotIdx++) {
+      const moduleId = activeModules[slotIdx];
+      if (!moduleId) continue;
+
+      const upgrade = UPGRADE_REGISTRY[moduleId];
+      if (upgrade.triggerId === triggerId) {
+        executeModuleEffect(slotIdx, moduleId, pState, context);
+      }
     }
   }
 }
@@ -33,7 +87,18 @@ export function handleTrigger(
 /**
  * Handles the actual visual stub behaviors of each individual module.
  */
-function executeModuleEffect(moduleId: ModuleId, pState: Probe, context: TriggerContext) {
+export function executeModuleEffect(moduleIndex: number, moduleId: ModuleId, pState: Probe, context: TriggerContext) {
+  // Dispatch a custom DOM event to alert React components of module activation pulses
+  if (typeof window !== 'undefined') {
+    const event = new CustomEvent('module-triggered', {
+      detail: {
+        moduleIndex,
+        forceTriggered: !!context.forceTriggered
+      }
+    });
+    window.dispatchEvent(event);
+  }
+
   switch (moduleId) {
     case ModuleId.ATMOSPHERIC_SCOOP:
       console.log("Triggered ATMOSPHERIC_SCOOP! 10x data boost active for 3s.");

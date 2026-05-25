@@ -29,10 +29,34 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
 }) => {
   const isDraggable = mod ? (context === 'shop-shelf' ? (canAfford ? canAfford(mod.cost) : true) : true) : false;
 
+  const [pulseState, setPulseState] = React.useState<'natural' | 'forced' | null>(null);
+
+  React.useEffect(() => {
+    if (context !== 'hud' || !mod) return;
+
+    const handleModuleTriggered = (e: Event) => {
+      const customEvent = e as CustomEvent<{ moduleIndex: number; forceTriggered: boolean }>;
+      if (customEvent.detail.moduleIndex === index) {
+        setPulseState(customEvent.detail.forceTriggered ? 'forced' : 'natural');
+      }
+    };
+
+    window.addEventListener('module-triggered', handleModuleTriggered);
+    return () => window.removeEventListener('module-triggered', handleModuleTriggered);
+  }, [context, mod, index]);
+
+  React.useEffect(() => {
+    if (!pulseState) return;
+    const timer = setTimeout(() => {
+      setPulseState(null);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [pulseState]);
+
   const renderTooltip = (item: UpgradeEntry, tooltipContext: 'hud' | 'shop-shelf' | 'shop-player') => {
     const refund = Math.floor(item.cost / 2);
     return (
-      <div 
+      <div
         className="tooltip-card font-orbitron"
         style={{
           position: 'absolute',
@@ -50,11 +74,11 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
           {item.name.toUpperCase()}
         </h4>
         {item.triggerId && (
-          <div 
-            className="badge font-orbitron" 
-            style={{ 
-              background: `${item.color}20`, 
-              color: item.color, 
+          <div
+            className="badge font-orbitron"
+            style={{
+              background: `${item.color}20`,
+              color: item.color,
               border: `1px solid ${item.color}`,
               marginBottom: '8px',
               display: 'inline-block'
@@ -90,7 +114,7 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
   if (context === 'hud') {
     if (!mod) {
       return (
-        <div 
+        <div
           className="build-module-slot empty"
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
@@ -110,7 +134,7 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
     }
 
     return (
-      <div 
+      <div
         className="build-module-slot filled"
         draggable={true}
         onDragStart={(e) => {
@@ -133,30 +157,39 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
         style={{
           flex: '1 1 0px',
           aspectRatio: '1',
-          background: 'rgba(0,0,0,0.55)',
-          border: `2px solid ${mod.color}`,
+          background: pulseState ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.55)',
+          border: pulseState
+            ? (pulseState === 'forced' ? '2px solid #ff9800' : '2px solid #ffffff')
+            : `2px solid ${mod.color}`,
           borderRadius: '6px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontWeight: 'bold',
           fontSize: '12px',
-          color: mod.color,
-          boxShadow: `0 0 8px ${mod.color}35`,
+          color: pulseState
+            ? (pulseState === 'forced' ? '#ff9800' : '#ffffff')
+            : mod.color,
+          boxShadow: pulseState
+            ? (pulseState === 'forced' ? `0 0 25px #ff9800, 0 0 15px ${mod.color}` : `0 0 25px #ffffff, 0 0 15px ${mod.color}`)
+            : `0 0 8px ${mod.color}35`,
+          transform: pulseState ? 'scale(1.16)' : 'scale(1)',
+          transition: 'all 0.08s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
           cursor: 'grab',
-          position: 'relative'
+          position: 'relative',
+          zIndex: pulseState ? 10 : 1
         }}
       >
         {mod.image ? (
-          <img 
-            src={mod.image} 
-            alt={mod.name} 
-            style={{ 
-              width: '100%', 
-              height: '100%', 
-              objectFit: 'cover', 
-              borderRadius: '4px' 
-            }} 
+          <img
+            src={mod.image}
+            alt={mod.name}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              borderRadius: '4px'
+            }}
           />
         ) : (
           mod.short
@@ -184,7 +217,7 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
     return (
       <div className="storefront-slot-wrapper">
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', width: '100%', position: 'relative' }}>
-          <div 
+          <div
             className={`shop-cartridge ${isDraggable ? 'draggable' : 'locked'}`}
             draggable={isDraggable}
             onDragStart={(e) => {
@@ -212,17 +245,17 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
             </div>
             <div className="cartridge-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', width: '100%', flex: 1 }}>
               {mod.image ? (
-                <img 
-                  src={mod.image} 
-                  alt={mod.name} 
-                  style={{ 
-                    width: '42px', 
-                    height: '42px', 
-                    objectFit: 'cover', 
+                <img
+                  src={mod.image}
+                  alt={mod.name}
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    objectFit: 'cover',
                     borderRadius: '6px',
                     border: `1.5px solid ${mod.color}60`,
                     boxShadow: `0 0 10px ${mod.color}40`
-                  }} 
+                  }}
                 />
               ) : (
                 <div className="slot-badge font-orbitron" style={{ color: mod.color, fontSize: '18px', margin: 0, padding: 0 }}>
@@ -240,7 +273,7 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
             {/* Immersive Floating Hover Tooltip Card */}
             {renderTooltip(mod, 'shop-shelf')}
           </div>
-          
+
           {/* Price Tag Below */}
           <div className="font-orbitron text-gold" style={{ fontSize: '11px', fontWeight: 'bold', textShadow: '0 0 8px rgba(255, 215, 0, 0.45)', marginTop: '4px' }}>
             {mod.cost}☉
@@ -254,7 +287,7 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
   // context === 'shop-player'
   if (!mod) {
     return (
-      <div 
+      <div
         className="belt-slot empty-port"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
@@ -266,11 +299,11 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
             const shelfIndexStr = e.dataTransfer.getData("shelfIndex");
             const upgrade = UPGRADE_REGISTRY[id];
             if (upgrade.type !== 'module') return;
-            
+
             const shelfIdx = shelfIndexStr ? parseInt(shelfIndexStr, 10) : -1;
             if (shelfIdx !== -1 && purchasedShelfSlots && purchasedShelfSlots[shelfIdx]) return;
             if (canAfford && !canAfford(upgrade.cost)) return;
-            
+
             if (onPurchase) onPurchase(upgrade, index);
             if (shelfIdx !== -1 && setPurchasedShelfSlots) {
               setPurchasedShelfSlots(prev => {
@@ -294,7 +327,7 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-      <div 
+      <div
         className="belt-slot filled"
         draggable={true}
         onDragStart={(e) => {
@@ -313,11 +346,11 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
             const shelfIndexStr = e.dataTransfer.getData("shelfIndex");
             const upgrade = UPGRADE_REGISTRY[id];
             if (upgrade.type !== 'module') return;
-            
+
             const shelfIdx = shelfIndexStr ? parseInt(shelfIndexStr, 10) : -1;
             if (shelfIdx !== -1 && purchasedShelfSlots && purchasedShelfSlots[shelfIdx]) return;
             if (canAfford && !canAfford(upgrade.cost)) return;
-            
+
             // Slot is filled, purchase drop is bypassed.
             return;
           } else if (dragType === "belt") {
@@ -337,17 +370,17 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
           </div>
           <div className="cartridge-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', width: '100%', flex: 1 }}>
             {mod.image ? (
-              <img 
-                src={mod.image} 
-                alt={mod.name} 
-                style={{ 
-                  width: '38px', 
-                  height: '38px', 
-                  objectFit: 'cover', 
+              <img
+                src={mod.image}
+                alt={mod.name}
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  objectFit: 'cover',
                   borderRadius: '4px',
                   border: `1px solid ${mod.color}60`,
                   boxShadow: `0 0 8px ${mod.color}30`
-                }} 
+                }}
               />
             ) : (
               <div style={{ width: '38px' }} />
@@ -360,7 +393,7 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
       </div>
 
       {/* Sell Button Below Cartridge */}
-      <button 
+      <button
         className="btn-arcade danger font-orbitron"
         onClick={(e) => {
           e.stopPropagation();
