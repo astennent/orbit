@@ -13,6 +13,7 @@ import { usePhysicsLoop } from './hooks/usePhysicsLoop'
 import { useSlingshotControls } from './hooks/useSlingshotControls'
 import { getStatusDisplay } from './utils/statusFormatters'
 import { GRAVITATIONAL_CONSTANT, SECTOR_QUOTA } from './constants'
+import { createFreshProbe } from './utils/probeUtils'
 import { UPGRADE_REGISTRY } from './constants/upgrades'
 
 export default function App() {
@@ -37,12 +38,12 @@ export default function App() {
     }
   })
 
-  const [hackSlots, setHackSlots] = useState<(UpgradeId | null)[]>(() => {
+  const [hackSlots, setHackSlots] = useState<UpgradeId[]>(() => {
     try {
       const saved = localStorage.getItem('orbit_hack_slots')
-      return saved ? JSON.parse(saved) : [null, null]
+      return saved ? JSON.parse(saved) : []
     } catch (e) {
-      return [null, null]
+      return []
     }
   })
 
@@ -58,7 +59,7 @@ export default function App() {
   // Derive all owned upgrades list for back-compat with physics loops
   const purchasedUpgrades = [
     ...moduleSlots.filter((id): id is UpgradeId => id !== null),
-    ...hackSlots.filter((id): id is UpgradeId => id !== null)
+    ...hackSlots
   ]
   
   const aimStartPos = useRef(new THREE.Vector3(-12, 0, 5)).current
@@ -136,7 +137,7 @@ export default function App() {
   const handleLootInject: React.Dispatch<React.SetStateAction<UpgradeId[]>> = (updater) => {
     const tempCurrent = [
       ...moduleSlots.filter((id): id is UpgradeId => id !== null),
-      ...hackSlots.filter((id): id is UpgradeId => id !== null)
+      ...hackSlots
     ]
     const updated = typeof updater === 'function' ? updater(tempCurrent) : updater
     const droppedId = updated[updated.length - 1]
@@ -153,14 +154,7 @@ export default function App() {
         return next
       })
     } else {
-      setHackSlots(prev => {
-        const next = [...prev]
-        const emptyIdx = next.indexOf(null)
-        if (emptyIdx !== -1) {
-          next[emptyIdx] = droppedId
-        }
-        return next
-      })
+      setHackSlots(prev => [...prev, droppedId])
     }
   }
 
@@ -207,14 +201,7 @@ export default function App() {
     gameStateRef,
     aimStartPos,
     onLaunch: (firingVelocity) => {
-      probeRef.current = {
-        pos: aimStartPos.clone(),
-        vel: firingVelocity.clone(),
-        data: 0,
-        trail: [aimStartPos.clone()],
-        integrity: 10,
-        maxIntegrity: 10
-      }
+      probeRef.current = createFreshProbe(aimStartPos, firingVelocity, [aimStartPos])
       setProbe({ ...probeRef.current })
       setGameState('FLIGHT')
 
@@ -248,14 +235,7 @@ export default function App() {
     asteroidsRef.current = newAsteroids
 
     setGameState('IDLE')
-    const freshProbe = {
-      pos: aimStartPos.clone(),
-      vel: new THREE.Vector3(0, 0, 0),
-      data: 0,
-      trail: [],
-      integrity: 10,
-      maxIntegrity: 10
-    }
+    const freshProbe = createFreshProbe(aimStartPos)
     probeRef.current = freshProbe
     setProbe(freshProbe)
     setAimVel(null)
@@ -277,20 +257,18 @@ export default function App() {
   }
 
   // Shop purchase trigger (specifying target console slot index)
-  const handlePurchase = (upgrade: UpgradeEntry, slotIndex: number) => {
+  const handlePurchase = (upgrade: UpgradeEntry, slotIndex?: number) => {
     setDataCores(prev => Math.max(0, prev - upgrade.cost))
     if (upgrade.type === 'module') {
-      setModuleSlots(prev => {
-        const next = [...prev]
-        next[slotIndex] = upgrade.id
-        return next
-      })
+      if (slotIndex !== undefined) {
+        setModuleSlots(prev => {
+          const next = [...prev]
+          next[slotIndex] = upgrade.id
+          return next
+        })
+      }
     } else {
-      setHackSlots(prev => {
-        const next = [...prev]
-        next[slotIndex] = upgrade.id
-        return next
-      })
+      setHackSlots(prev => [...prev, upgrade.id])
     }
   }
 
@@ -315,12 +293,6 @@ export default function App() {
         next[slotIndex] = null
         return next
       })
-    } else {
-      setHackSlots(prev => {
-        const next = [...prev]
-        next[slotIndex] = null
-        return next
-      })
     }
   }
 
@@ -333,14 +305,7 @@ export default function App() {
   // Reset the probe level simulation layout
   const handleResetLevel = () => {
     setGameState('IDLE')
-    const freshProbe = {
-      pos: aimStartPos.clone(),
-      vel: new THREE.Vector3(0, 0, 0),
-      data: 0,
-      trail: [],
-      integrity: 10,
-      maxIntegrity: 10
-    }
+    const freshProbe = createFreshProbe(aimStartPos)
     probeRef.current = freshProbe
     setProbe(freshProbe)
 
@@ -374,7 +339,7 @@ export default function App() {
 
     setDataCores(0)
     setModuleSlots([null, null, null, null, null, null])
-    setHackSlots([null, null])
+    setHackSlots([])
     setLevel(1)
     
     const freshPlanets = generatePlanets(1)
@@ -392,14 +357,7 @@ export default function App() {
     asteroidsRef.current = freshAsteroids
 
     setGameState('IDLE')
-    const freshProbe = {
-      pos: aimStartPos.clone(),
-      vel: new THREE.Vector3(0, 0, 0),
-      data: 0,
-      trail: [],
-      integrity: 10,
-      maxIntegrity: 10
-    }
+    const freshProbe = createFreshProbe(aimStartPos)
     probeRef.current = freshProbe
     setProbe(freshProbe)
     setAimVel(null)
@@ -431,7 +389,7 @@ export default function App() {
 
   // Modules and Hacks formatting for Build Specs Panel using the slots structure
   const activeModules = moduleSlots.map(id => id ? UPGRADE_REGISTRY[id] : null)
-  const activeHacks = hackSlots.map(id => id ? UPGRADE_REGISTRY[id] : null).filter((h): h is UpgradeEntry => h !== null)
+  const activeHacks = hackSlots.map(id => UPGRADE_REGISTRY[id]).filter((h): h is UpgradeEntry => h !== null)
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>

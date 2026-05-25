@@ -95,6 +95,23 @@ export function ProbeComponent({ probe, gameState, planets }: ProbeComponentProp
           />
         </mesh>
 
+        {/* Magnet collection range ring indicator */}
+        {probe.magnetRadius > 0 && (
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
+            <ringGeometry args={[probe.magnetRadius - 0.04, probe.magnetRadius + 0.04, 64]} />
+            <meshStandardMaterial
+              color="#a0a0ff"
+              transparent
+              opacity={0.35}
+              roughness={0.2}
+              metalness={0.9}
+              emissive="#7070ff"
+              emissiveIntensity={1.2}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+        )}
+
         {/* Immersive 3D Tooltip Overlay */}
         {hovered && (
           <Html position={[0, 0.8, 0]} center style={{ pointerEvents: 'none' }}>
@@ -111,6 +128,7 @@ export function ProbeComponent({ probe, gameState, planets }: ProbeComponentProp
               <div><strong>Status:</strong> {gameState}</div>
               <div><strong>Velocity:</strong> {(new THREE.Vector3(probe.vel.x, 0, probe.vel.z).length() * 10).toFixed(1)} km/s</div>
               <div><strong>Telemetry Data:</strong> {probe.data.toFixed(0)} Collected</div>
+              <div><strong>Magnet Radius:</strong> {probe.magnetRadius.toFixed(1)} km</div>
               
               {isInsideAtmosphere && (
                 <div style={{

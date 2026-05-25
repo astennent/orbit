@@ -60,6 +60,12 @@ function executeModuleEffect(moduleId: ModuleId, pState: Probe, context: Trigger
       context.triggerDataToast("WIND SHIELD: STUB ACTIVE", pState.pos, '#2ed573');
       break;
 
+    case ModuleId.MAGNETO_SCRAPPER:
+      console.log("Triggered MAGNETO_SCRAPPER! Increasing magnet range.");
+      pState.magnetRadius += 0.2;
+      context.triggerDataToast(`MAGNET RANGE +0.2 (Total: ${pState.magnetRadius.toFixed(1)})`, pState.pos, '#a0a0ff');
+      break;
+
     default:
       break;
   }

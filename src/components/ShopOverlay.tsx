@@ -6,8 +6,8 @@ import './ShopOverlay.css';
 interface ShopOverlayProps {
   dataCores: number;
   moduleSlots: (UpgradeId | null)[];
-  hackSlots: (UpgradeId | null)[];
-  onPurchase: (upgrade: UpgradeEntry, slotIndex: number) => void;
+  hackSlots: UpgradeId[];
+  onPurchase: (upgrade: UpgradeEntry, slotIndex?: number) => void;
   onRearrange: (sourceIndex: number, targetIndex: number) => void;
   onSell: (upgrade: UpgradeEntry, slotIndex: number) => void;
   onClose: () => void;
@@ -24,7 +24,6 @@ export const ShopOverlay: React.FC<ShopOverlayProps> = ({
 }) => {
   const [hoveredUpgrade, setHoveredUpgrade] = useState<UpgradeEntry | null>(null);
   const [dragOverModule, setDragOverModule] = useState(false);
-  const [dragOverHack, setDragOverHack] = useState(false);
 
   // State to track the 4 randomly selected modules with replacement
   const [availableModules] = useState<UpgradeEntry[]>(() => {
@@ -94,26 +93,24 @@ export const ShopOverlay: React.FC<ShopOverlayProps> = ({
     }
   };
 
-  const handleHackSectionDrop = (e: React.DragEvent) => {
-    if (e.defaultPrevented) return;
-    e.preventDefault();
-    setDragOverHack(false);
-
-    const dragType = e.dataTransfer.getData("dragType");
-    if (dragType !== "shelf") return;
-
-    const id = e.dataTransfer.getData("upgradeId") as UpgradeId;
-    if (!id) return;
-
-    const upgrade = UPGRADE_REGISTRY[id];
-    if (upgrade.type !== 'hack') return;
-    if (isOwned(id)) return;
+  const handleCartridgeClick = (upgrade: UpgradeEntry, index: number, isHack: boolean) => {
+    const owned = isHack ? isOwned(upgrade.id) : purchasedShelfSlots[index];
+    if (owned) return;
     if (!canAfford(upgrade.cost)) return;
 
-    const firstEmpty = hackSlots.indexOf(null);
-    if (firstEmpty === -1) return;
-
-    onPurchase(upgrade, firstEmpty);
+    if (isHack) {
+      onPurchase(upgrade);
+    } else {
+      const firstEmpty = moduleSlots.indexOf(null);
+      if (firstEmpty !== -1) {
+        onPurchase(upgrade, firstEmpty);
+        setPurchasedShelfSlots(prev => {
+          const next = [...prev];
+          next[index] = true;
+          return next;
+        });
+      }
+    }
   };
 
   // Rendering individual upgrade cartridge sitting on storefront shelves
@@ -131,30 +128,55 @@ export const ShopOverlay: React.FC<ShopOverlayProps> = ({
             <div className="socket-label font-orbitron">VACANT</div>
           </div>
         ) : (
-          /* Draggable Retro Vacuum-Tube Cartridge */
-          <div 
-            className={`shop-cartridge ${isDraggable ? 'draggable' : 'locked'}`}
-            draggable={isDraggable}
-            onDragStart={(e) => handleDragStart(e, upgrade.id, isHack ? undefined : index)}
-            onMouseEnter={() => setHoveredUpgrade(upgrade)}
-            onMouseLeave={() => setHoveredUpgrade(null)}
-            style={{
-              border: `2.5px solid ${upgrade.color}`,
-              boxShadow: `0 0 14px ${upgrade.color}45, inset 0 0 8px ${upgrade.color}25`
-            }}
-          >
-            <div className="cartridge-dome" style={{ background: `radial-gradient(circle at top, ${upgrade.color}35 0%, rgba(0,0,0,0) 80%)` }} />
-            <div className="cartridge-header" style={{ background: upgrade.color }}>
-              {upgrade.short}
+          /* Draggable Retro Vacuum-Tube Cartridge and price below */
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', width: '100%' }}>
+            <div 
+              className={`shop-cartridge ${isDraggable ? 'draggable' : 'locked'}`}
+              draggable={isDraggable}
+              onDragStart={(e) => handleDragStart(e, upgrade.id, isHack ? undefined : index)}
+              onClick={() => handleCartridgeClick(upgrade, index, isHack)}
+              onMouseEnter={() => setHoveredUpgrade(upgrade)}
+              onMouseLeave={() => setHoveredUpgrade(null)}
+              style={{
+                border: `2.5px solid ${upgrade.color}`,
+                boxShadow: `0 0 14px ${upgrade.color}45, inset 0 0 8px ${upgrade.color}25`
+              }}
+            >
+              <div className="cartridge-dome" style={{ background: `radial-gradient(circle at top, ${upgrade.color}35 0%, rgba(0,0,0,0) 80%)` }} />
+              <div className="cartridge-header" style={{ background: upgrade.color }}>
+                {upgrade.name}
+              </div>
+              <div className="cartridge-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', width: '100%', flex: 1 }}>
+                {upgrade.image ? (
+                  <img 
+                    src={upgrade.image} 
+                    alt={upgrade.name} 
+                    style={{ 
+                      width: '42px', 
+                      height: '42px', 
+                      objectFit: 'cover', 
+                      borderRadius: '6px',
+                      border: `1.5px solid ${upgrade.color}60`,
+                      boxShadow: `0 0 10px ${upgrade.color}40`
+                    }} 
+                  />
+                ) : (
+                  <div className="slot-badge font-orbitron" style={{ color: upgrade.color, fontSize: '18px', margin: 0, padding: 0 }}>
+                    {upgrade.short}
+                  </div>
+                )}
+              </div>
+              {/* Contact pins at base of cartridge */}
+              <div className="cartridge-pins">
+                <span style={{ background: upgrade.color }} />
+                <span style={{ background: upgrade.color }} />
+                <span style={{ background: upgrade.color }} />
+              </div>
             </div>
-            <div className="cartridge-body">
-              <span className="cartridge-cost font-orbitron">{upgrade.cost}☉</span>
-            </div>
-            {/* Contact pins at base of cartridge */}
-            <div className="cartridge-pins">
-              <span style={{ background: upgrade.color }} />
-              <span style={{ background: upgrade.color }} />
-              <span style={{ background: upgrade.color }} />
+            
+            {/* Price Tag Below the Cartridge */}
+            <div className="font-orbitron text-gold" style={{ fontSize: '11px', fontWeight: 'bold', textShadow: '0 0 8px rgba(255, 215, 0, 0.45)', marginTop: '4px' }}>
+              {upgrade.cost}☉
             </div>
           </div>
         )}
@@ -164,7 +186,6 @@ export const ShopOverlay: React.FC<ShopOverlayProps> = ({
 
   // Map slot UpgradeIds to their Registry Entries
   const activeModules = moduleSlots.map(id => id ? UPGRADE_REGISTRY[id] : null);
-  const activeHacks = hackSlots.map(id => id ? UPGRADE_REGISTRY[id] : null);
 
   return (
     <div className="shop-modal">
@@ -198,16 +219,9 @@ export const ShopOverlay: React.FC<ShopOverlayProps> = ({
 
             {/* Shelf Row 2: Modules */}
             <div className="shop-shelf">
-              <div className="shelf-label font-orbitron">SHELF II: AUXILIARY FLIGHT MODULES</div>
+              <div className="shelf-label font-orbitron">SHELF II: AUXILIARY MODULE CORES</div>
               <div className="shelf-metal-beam modules-beam">
                 {middleShelfModules.map((upgrade, idx) => renderStorefrontCartridge(upgrade, idx, false))}
-              </div>
-            </div>
-
-            {/* Shelf Row 3: Modules */}
-            <div className="shop-shelf">
-              <div className="shelf-label font-orbitron">SHELF III: DATA & SHIP INTEGRITY UPGRADES</div>
-              <div className="shelf-metal-beam modules-beam">
                 {bottomShelfModules.map((upgrade, idx) => renderStorefrontCartridge(upgrade, idx + 2, false))}
               </div>
             </div>
@@ -254,134 +268,109 @@ export const ShopOverlay: React.FC<ShopOverlayProps> = ({
             <div className="belt-slots-container">
               {activeModules.map((mod, i) => {
                 return (
-                  <div 
-                    key={i} 
-                    className={`belt-slot ${mod ? 'filled' : 'empty-port'}`}
-                    draggable={!!mod}
-                    onDragStart={(e) => {
-                      if (mod) {
-                        e.dataTransfer.setData("dragType", "belt");
-                        e.dataTransfer.setData("sourceSlotIndex", i.toString());
-                      }
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation(); // Stop general section drop
-                      
-                      const dragType = e.dataTransfer.getData("dragType");
-                      if (dragType === "shelf") {
-                        const id = e.dataTransfer.getData("upgradeId") as UpgradeId;
-                        const shelfIndexStr = e.dataTransfer.getData("shelfIndex");
-                        const upgrade = UPGRADE_REGISTRY[id];
-                        if (upgrade.type !== 'module') return;
-                        
-                        const shelfIdx = shelfIndexStr ? parseInt(shelfIndexStr, 10) : -1;
-                        if (shelfIdx !== -1 && purchasedShelfSlots[shelfIdx]) return;
-                        if (!canAfford(upgrade.cost)) return;
-                        if (mod) return; // Port is occupied!
-                        
-                        onPurchase(upgrade, i);
-                        if (shelfIdx !== -1) {
-                          setPurchasedShelfSlots(prev => {
-                            const next = [...prev];
-                            next[shelfIdx] = true;
-                            return next;
-                          });
+                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                    <div 
+                      className={`belt-slot ${mod ? 'filled' : 'empty-port'}`}
+                      draggable={!!mod}
+                      onDragStart={(e) => {
+                        if (mod) {
+                          e.dataTransfer.setData("dragType", "belt");
+                          e.dataTransfer.setData("sourceSlotIndex", i.toString());
                         }
-                      } else if (dragType === "belt") {
-                        const sourceSlot = parseInt(e.dataTransfer.getData("sourceSlotIndex"), 10);
-                        if (isNaN(sourceSlot) || sourceSlot === i) return;
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation(); // Stop general section drop
                         
-                        onRearrange(sourceSlot, i);
-                      }
-                    }}
-                    onMouseEnter={() => { if (mod) setHoveredUpgrade(mod); }}
-                    onMouseLeave={() => { if (mod) setHoveredUpgrade(null); }}
-                    style={mod ? { border: `2.5px solid ${mod.color}`, boxShadow: `0 0 12px ${mod.color}35`, cursor: 'grab' } : {}}
-                  >
-                    {mod ? (
-                      <>
-                        <button 
-                          className="sell-btn font-orbitron" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSell(mod, i);
-                          }}
-                          title={`Trade-in ${mod.name} for +${Math.floor(mod.cost / 2)} Data Cores`}
-                        >
-                          ✕
-                        </button>
-                        <div className="slot-badge font-orbitron" style={{ color: mod.color }}>{mod.short}</div>
-                      </>
-                    ) : (
-                      <>
-                        <span className="slot-glow" />—
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+                        const dragType = e.dataTransfer.getData("dragType");
+                        if (dragType === "shelf") {
+                          const id = e.dataTransfer.getData("upgradeId") as UpgradeId;
+                          const shelfIndexStr = e.dataTransfer.getData("shelfIndex");
+                          const upgrade = UPGRADE_REGISTRY[id];
+                          if (upgrade.type !== 'module') return;
+                          
+                          const shelfIdx = shelfIndexStr ? parseInt(shelfIndexStr, 10) : -1;
+                          if (shelfIdx !== -1 && purchasedShelfSlots[shelfIdx]) return;
+                          if (!canAfford(upgrade.cost)) return;
+                          if (mod) return; // Port is occupied!
+                          
+                          onPurchase(upgrade, i);
+                          if (shelfIdx !== -1) {
+                            setPurchasedShelfSlots(prev => {
+                              const next = [...prev];
+                              next[shelfIdx] = true;
+                              return next;
+                            });
+                          }
+                        } else if (dragType === "belt") {
+                          const sourceSlot = parseInt(e.dataTransfer.getData("sourceSlotIndex"), 10);
+                          if (isNaN(sourceSlot) || sourceSlot === i) return;
+                          
+                          onRearrange(sourceSlot, i);
+                        }
+                      }}
+                      onMouseEnter={() => { if (mod) setHoveredUpgrade(mod); }}
+                      onMouseLeave={() => { if (mod) setHoveredUpgrade(null); }}
+                      style={mod ? { border: `2.5px solid ${mod.color}`, boxShadow: `0 0 12px ${mod.color}35`, cursor: 'grab' } : {}}
+                    >
+                      {mod ? (
+                        <div className="shop-cartridge" style={{ width: '100%', height: '100%', border: 'none', boxShadow: 'none', background: 'transparent' }}>
+                          <div className="cartridge-dome" style={{ background: `radial-gradient(circle at top, ${mod.color}25 0%, rgba(0,0,0,0) 80%)` }} />
+                          <div className="cartridge-header" style={{ background: mod.color }}>
+                            {mod.name}
+                          </div>
+                          <div className="cartridge-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', width: '100%', flex: 1 }}>
+                            {mod.image ? (
+                              <img 
+                                src={mod.image} 
+                                alt={mod.name} 
+                                style={{ 
+                                  width: '38px', 
+                                  height: '38px', 
+                                  objectFit: 'cover', 
+                                  borderRadius: '4px',
+                                  border: `1px solid ${mod.color}60`,
+                                  boxShadow: `0 0 8px ${mod.color}30`
+                                }} 
+                              />
+                            ) : (
+                              <div style={{ width: '38px' }} />
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="slot-glow" />
+                          <div className="socket-label font-orbitron" style={{ fontSize: '9px' }}>CORE PORT {i + 1}</div>
+                        </>
+                      )}
+                    </div>
 
-          {/* Passive Hack Register Belt Zone */}
-          <div 
-            className={`console-belt-section hacks ${dragOverHack ? 'drag-over' : ''}`}
-            onDragOver={(e) => { e.preventDefault(); setDragOverHack(true); }}
-            onDragLeave={() => setDragOverHack(false)}
-            onDrop={handleHackSectionDrop}
-          >
-            <h4 className="font-orbitron">HACK REGISTERS (MAX 2 SLOTS)</h4>
-            <div className="belt-slots-container">
-              {activeHacks.map((hack, i) => {
-                return (
-                  <div 
-                    key={i} 
-                    className={`belt-slot hack-type ${hack ? 'filled' : 'empty-port'}`}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      
-                      const dragType = e.dataTransfer.getData("dragType");
-                      if (dragType === "shelf") {
-                        const id = e.dataTransfer.getData("upgradeId") as UpgradeId;
-                        const upgrade = UPGRADE_REGISTRY[id];
-                        if (upgrade.type !== 'hack') return;
-                        if (isOwned(id)) return;
-                        if (!canAfford(upgrade.cost)) return;
-                        if (hack) return;
-                        
-                        onPurchase(upgrade, i);
-                      }
-                    }}
-                    onMouseEnter={() => { if (hack) setHoveredUpgrade(hack); }}
-                    onMouseLeave={() => { if (hack) setHoveredUpgrade(null); }}
-                    style={hack ? { border: `2.5px solid ${hack.color}`, boxShadow: `0 0 12px ${hack.color}35` } : {}}
-                  >
-                    {hack ? (
-                      <>
-                        <button 
-                          className="sell-btn font-orbitron" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSell(hack, i);
-                          }}
-                          title={`Trade-in ${hack.name} for +${Math.floor(hack.cost / 2)} Data Cores`}
-                        >
-                          ✕
-                        </button>
-                        <div className="slot-badge font-orbitron" style={{ color: hack.color }}>{hack.short}</div>
-                      </>
+                    {/* Sell Button Below Cartridge */}
+                    {mod ? (
+                      <button 
+                        className="btn-arcade danger font-orbitron"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSell(mod, i);
+                        }}
+                        style={{
+                          fontSize: '9.5px',
+                          padding: '3px 12px',
+                          marginTop: '4px',
+                          borderRadius: '4px',
+                          boxShadow: '0 0 6px rgba(255, 71, 87, 0.25)',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        SELL (+{Math.floor(mod.cost / 2)}☉)
+                      </button>
                     ) : (
-                      <>
-                        <span className="slot-glow" />—
-                      </>
+                      /* Blank placeholder for visual level consistency */
+                      <div style={{ height: '21.5px', marginTop: '4px' }} />
                     )}
                   </div>
                 );

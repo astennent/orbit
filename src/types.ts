@@ -48,6 +48,7 @@ export interface Probe {
   trail: THREE.Vector3[];
   integrity: number;
   maxIntegrity: number;
+  magnetRadius: number;
 }
 
 export interface Planet {
@@ -97,6 +98,7 @@ export enum ModuleId {
   GRAVITY_STABILIZER = 'GRAVITY_STABILIZER',
   BLACK_BOX = 'BLACK_BOX',
   WIND_SHIELD = 'WIND_SHIELD',
+  MAGNETO_SCRAPPER = 'MAGNETO_SCRAPPER',
 }
 
 export enum HackId {
@@ -127,6 +129,7 @@ export interface UpgradeEntry {
   color: string;
   desc: string;
   triggerId?: TriggerId;
+  image?: string;
 }
 
 

@@ -13,3 +13,6 @@ export const LAUNCH_SPEED_MULTIPLIER = 0.06; // Drag vector to velocity multipli
 export const PHYSICS_DT = 0.016; // Fixed timestep dt for deterministic integration
 
 export const OUT_OF_BOUNDS_LIMIT = 80.0; // Perimeter boundary radius to prevent infinite drift
+
+export const DEFAULT_MAGNET_RADIUS = 1.0; // Default probe collection magnet radius
+

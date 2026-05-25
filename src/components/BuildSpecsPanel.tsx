@@ -151,7 +151,20 @@ export const BuildSpecsPanel: React.FC<BuildSpecsPanelProps> = ({
                       position: 'relative'
                     }}
                   >
-                    {mod.short}
+                    {mod.image ? (
+                      <img 
+                        src={mod.image} 
+                        alt={mod.name} 
+                        style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: 'cover', 
+                          borderRadius: '4px' 
+                        }} 
+                      />
+                    ) : (
+                      mod.short
+                    )}
 
                     {/* Rich text custom tooltip card */}
                     <div 

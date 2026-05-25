@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { Probe, Planet, ExitPortal, Beacon, Asteroid, DataToast, GameState, UpgradeId, ModuleId, HackId, TriggerId } from '../types'
 import { UPGRADE_REGISTRY } from '../constants/upgrades'
 import { handleTrigger } from '../utils/moduleEffects'
+import { createFreshProbe } from '../utils/probeUtils'
 import {
   GRAVITATIONAL_CONSTANT,
   ATMOSPHERE_DRAG,
@@ -37,28 +38,14 @@ export function usePhysicsLoop({
   aimStartPos,
   onSecureDataCores
 }: UsePhysicsLoopProps) {
-  const [probe, setProbe] = useState<Probe>({
-    pos: aimStartPos.clone(),
-    vel: new THREE.Vector3(0, 0, 0),
-    data: 0,
-    trail: [],
-    integrity: 10,
-    maxIntegrity: 10
-  })
-  
+  const [probe, setProbe] = useState<Probe>(() => createFreshProbe(aimStartPos))
+
   const [beacons, setBeacons] = useState<Beacon[]>(initialSector.beacons)
   const [asteroids, setAsteroids] = useState<Asteroid[]>(initialSector.asteroids)
   const [toasts, setToasts] = useState<DataToast[]>([])
   const [showSelfDestruct, setShowSelfDestruct] = useState<boolean>(false)
 
-  const probeRef = useRef<Probe>({
-    pos: aimStartPos.clone(),
-    vel: new THREE.Vector3(0, 0, 0),
-    data: 0,
-    trail: [],
-    integrity: 10,
-    maxIntegrity: 10
-  })
+  const probeRef = useRef<Probe>(createFreshProbe(aimStartPos))
   const beaconsRef = useRef<Beacon[]>(initialSector.beacons)
   const asteroidsRef = useRef<Asteroid[]>(initialSector.asteroids)
   const selfDestructTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -273,10 +260,12 @@ export function usePhysicsLoop({
       let dataUpdated = false
       const updatedBeacons = beaconsRef.current.map(dp => {
         if (dp.collected) return dp
-        
+
         const dpDiff = new THREE.Vector3().subVectors(dp.pos, pState.pos)
         dpDiff.y = 0
-        if (dpDiff.length() < dp.radius + 0.35) {
+        const dist = dpDiff.length()
+
+        if (dist < dp.radius + 0.35) {
           dataUpdated = true
           const addedData = dp.value;
           pState.data += addedData;
@@ -288,6 +277,13 @@ export function usePhysicsLoop({
           handleTrigger(TriggerId.HIT_BEACON, pState, purchasedUpgradesRef.current, { triggerDataToast });
 
           return { ...dp, collected: true }
+        } else if (dist < pState.magnetRadius) {
+          // SUCK IT IN! Smoothly lerp beacon position towards probe position
+          dataUpdated = true
+          const lerpFactor = 0.18 // Sucking speed factor per tick
+          const newPos = dp.pos.clone().lerp(pState.pos, lerpFactor)
+          newPos.y = 0
+          return { ...dp, pos: newPos }
         }
         return dp
       })
@@ -300,46 +296,46 @@ export function usePhysicsLoop({
       // 4.5. Collect / Crash Asteroids
       let asteroidsUpdated = false
       let hitDestroyedShip = false
-      
+
       const updatedAsteroids = asteroidsRef.current.map(ast => {
         if (ast.health <= 0) return ast
-        
+
         const astDiff = new THREE.Vector3().subVectors(ast.pos, pState.pos)
         astDiff.y = 0
         if (astDiff.length() < ast.radius + 0.35) {
           asteroidsUpdated = true
-          
+
           const baseDamage = ast.type === 'ice' ? 3 : ast.type === 'carbon' ? 4 : 6
           const sizeMult = ast.size === 'large' ? 4 : ast.size === 'medium' ? 2 : 1
           const fraction = ast.health / 10
           const finalDamage = Math.ceil(baseDamage * sizeMult * fraction)
-          
+
           pState.integrity = Math.max(0, pState.integrity - finalDamage)
           triggerDataToast(`-${finalDamage} Hull`, pState.pos, '#ff4757')
 
           // Dispatch HIT_ASTEROID
           handleTrigger(TriggerId.HIT_ASTEROID, pState, purchasedUpgradesRef.current, { triggerDataToast });
-          
+
           if (pState.integrity <= 0) {
             hitDestroyedShip = true
             handleTrigger(TriggerId.PROBE_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
           }
-          
+
           let baseDataRewards = ast.type === 'metallic' ? (15 + Math.random() * 35) : (10 + Math.random() * 20)
           const dataMult = ast.size === 'large' ? 4 : ast.size === 'medium' ? 2 : 1
           const finalData = Math.round(baseDataRewards * dataMult)
           pState.data += finalData
-          
+
           const toastColor = ast.type === 'metallic' ? '#ffd700' : ast.type === 'ice' ? '#00ffcc' : '#ffffff'
           triggerDataToast(`+${finalData.toFixed(0)} Data`, ast.pos, toastColor)
-          
+
           const ownedUpgrades = purchasedUpgradesRef.current
           const hackChance = (ast.type === 'metallic' ? 0.10 : ast.type === 'carbon' ? 0.05 : 0.03) + (ast.size === 'large' ? 0.10 : ast.size === 'medium' ? 0.05 : 0.0)
           const modChance = (ast.type === 'metallic' ? 0.0 : ast.type === 'carbon' ? 0.15 : 0.10) + (ast.size === 'large' ? 0.10 : ast.size === 'medium' ? 0.05 : 0.0)
-          
+
           const rollHack = Math.random() < hackChance
           const rollMod = Math.random() < modChance
-          
+
           if (rollHack) {
             const allHacks = [HackId.LUCKY_CHARM, HackId.DEEP_SPACE_SENSOR]
             const unownedHacks = allHacks.filter(p => !ownedUpgrades.includes(p))
@@ -367,17 +363,17 @@ export function usePhysicsLoop({
               triggerDataToast(`+40 Data Bonus!`, ast.pos, '#ffd700')
             }
           }
-          
+
           return { ...ast, health: 0 }
         }
         return ast
       })
-      
+
       if (asteroidsUpdated) {
         asteroidsRef.current = updatedAsteroids
         setAsteroids(updatedAsteroids)
       }
-      
+
       if (hitDestroyedShip) {
         if (pState.data >= SECTOR_QUOTA) {
           gameStateRef.current = 'WIN'
