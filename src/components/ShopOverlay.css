@@ -459,3 +459,27 @@
 .animated-scan {
   animation: textFlicker 0.15s infinite alternate rgba(255,255,255,0.01);
 }
+
+/* ── Shop Cartridge & Belt Port Floating Hover Tooltips ── */
+.shop-cartridge {
+  position: relative;
+}
+
+.shop-cartridge .tooltip-card,
+.belt-slot.filled .tooltip-card {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%) translateY(8px);
+  transition: 
+    opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1), 
+    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), 
+    visibility 0.15s ease;
+  pointer-events: none;
+}
+
+.shop-cartridge:hover .tooltip-card,
+.belt-slot.filled:hover .tooltip-card {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}

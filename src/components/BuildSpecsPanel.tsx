@@ -1,16 +1,19 @@
 import React from 'react'
 import { UpgradeEntry } from '../types'
+import { ModuleCartridge } from './ModuleCartridge'
 
 interface BuildSpecsPanelProps {
   dataCores: number
   activeModules: (UpgradeEntry | null)[]
   activeHacks: UpgradeEntry[]
+  onRearrange?: (sourceIndex: number, targetIndex: number) => void
 }
 
 export const BuildSpecsPanel: React.FC<BuildSpecsPanelProps> = ({
   dataCores,
   activeModules,
-  activeHacks
+  activeHacks,
+  onRearrange
 }) => {
   const renderDataCoresProgress = (currentDataCores: number) => {
     const totalBars = 25;
@@ -127,102 +130,15 @@ export const BuildSpecsPanel: React.FC<BuildSpecsPanelProps> = ({
             INTEGRATED MODULE SYSTEM
           </div>
           <div style={{ display: 'flex', gap: '6px' }}>
-            {Array.from({ length: 6 }).map((_, i) => {
-              const mod = activeModules[i];
-              if (mod) {
-                return (
-                  <div 
-                    key={i} 
-                    className="build-module-slot filled"
-                    style={{
-                      flex: '1 1 0px',
-                      aspectRatio: '1',
-                      background: 'rgba(0,0,0,0.55)',
-                      border: `2px solid ${mod.color}`,
-                      borderRadius: '6px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 'bold',
-                      fontSize: '12px',
-                      color: mod.color,
-                      boxShadow: `0 0 8px ${mod.color}35`,
-                      cursor: 'help',
-                      position: 'relative'
-                    }}
-                  >
-                    {mod.image ? (
-                      <img 
-                        src={mod.image} 
-                        alt={mod.name} 
-                        style={{ 
-                          width: '100%', 
-                          height: '100%', 
-                          objectFit: 'cover', 
-                          borderRadius: '4px' 
-                        }} 
-                      />
-                    ) : (
-                      mod.short
-                    )}
-
-                    {/* Rich text custom tooltip card */}
-                    <div 
-                      className="tooltip-card font-orbitron"
-                      style={{
-                        position: 'absolute',
-                        bottom: '130%',
-                        [i < 3 ? 'left' : 'right']: '0',
-                        width: '220px',
-                        borderColor: mod.color,
-                        boxShadow: `0 10px 25px rgba(0,0,0,0.85), 0 0 15px ${mod.color}25`
-                      }}
-                    >
-                      <h4 style={{ color: mod.color, borderBottomColor: `${mod.color}40`, marginBottom: '6px' }}>
-                        {mod.name.toUpperCase()}
-                      </h4>
-                      {mod.triggerId && (
-                        <div 
-                          className="badge font-orbitron" 
-                          style={{ 
-                            background: `${mod.color}20`, 
-                            color: mod.color, 
-                            border: `1px solid ${mod.color}`,
-                            marginBottom: '8px' 
-                          }}
-                        >
-                          TRIGGER: {mod.triggerId.replace(/_/g, ' ')}
-                        </div>
-                      )}
-                      <div style={{ fontSize: '10.5px', color: '#e0e0e0', fontFamily: 'var(--font-body)', lineHeight: '1.4' }}>
-                        {mod.desc}
-                      </div>
-                    </div>
-                  </div>
-                );
-              } else {
-                return (
-                  <div 
-                    key={i} 
-                    className="build-module-slot empty"
-                    style={{
-                      flex: '1 1 0px',
-                      aspectRatio: '1',
-                      background: 'rgba(0,0,0,0.2)',
-                      border: '1.5px dashed rgba(255,255,255,0.08)',
-                      borderRadius: '6px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '12px',
-                      color: 'rgba(255,255,255,0.12)'
-                    }}
-                  >
-                    —
-                  </div>
-                );
-              }
-            })}
+            {Array.from({ length: 6 }).map((_, i) => (
+              <ModuleCartridge
+                key={i}
+                mod={activeModules[i]}
+                index={i}
+                context="hud"
+                onRearrange={onRearrange}
+              />
+            ))}
           </div>
         </div>
 

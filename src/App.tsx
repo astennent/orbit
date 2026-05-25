@@ -508,6 +508,7 @@ export default function App() {
           dataCores={dataCores}
           activeModules={activeModules}
           activeHacks={activeHacks}
+          onRearrange={handleRearrangeModules}
         />
 
         <ObjectivesPanel
