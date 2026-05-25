@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { UpgradeId, UpgradeEntry, HackId } from '../../types';
+import { ModuleId, UpgradeEntry } from '../../types';
 import { UPGRADE_REGISTRY, MODULES_REGISTRY } from '../../constants/upgrades';
 import { ModuleCartridge } from './ModuleCartridge';
 import './ShopOverlay.css';
 
 interface ShopOverlayProps {
   dataCores: number;
-  moduleSlots: (UpgradeId | null)[];
-  hackSlots: UpgradeId[];
+  moduleSlots: (ModuleId | null)[];
   onPurchase: (upgrade: UpgradeEntry, slotIndex?: number) => void;
   onRearrange: (sourceIndex: number, targetIndex: number) => void;
   onSell: (upgrade: UpgradeEntry, slotIndex: number) => void;
@@ -17,7 +16,6 @@ interface ShopOverlayProps {
 export const ShopOverlay: React.FC<ShopOverlayProps> = ({ 
   dataCores, 
   moduleSlots,
-  hackSlots,
   onPurchase, 
   onRearrange,
   onSell,
@@ -40,29 +38,9 @@ export const ShopOverlay: React.FC<ShopOverlayProps> = ({
   const [purchasedShelfSlots, setPurchasedShelfSlots] = useState<boolean[]>([false, false, false, false]);
 
   const canAfford = (cost: number) => dataCores >= cost;
-  const isOwned = (id: UpgradeId) => moduleSlots.includes(id) || hackSlots.includes(id);
-
-  // Grouping upgrades for the shelves
-  const topShelfHacks = [
-    UPGRADE_REGISTRY[HackId.DEEP_SPACE_SENSOR],
-    UPGRADE_REGISTRY[HackId.DEATH_RATTLE_LOOP],
-    UPGRADE_REGISTRY[HackId.OVERCLOCKED_OSCILLATOR],
-    UPGRADE_REGISTRY[HackId.METRONOME_MALFUNCTION],
-    UPGRADE_REGISTRY[HackId.EJECTION_ROUTE_6],
-    UPGRADE_REGISTRY[HackId.SHORT_CIRCUIT]
-  ];
 
   const middleShelfModules = [availableModules[0], availableModules[1]];
   const bottomShelfModules = [availableModules[2], availableModules[3]];
-
-  // Drag and Drop buying handlers
-  const handleDragStart = (e: React.DragEvent, upgradeId: UpgradeId, shelfIndex?: number) => {
-    e.dataTransfer.setData("dragType", "shelf");
-    e.dataTransfer.setData("upgradeId", upgradeId);
-    if (shelfIndex !== undefined) {
-      e.dataTransfer.setData("shelfIndex", shelfIndex.toString());
-    }
-  };
 
   // Section level drop fallbacks (first available empty slot)
   const handleModuleSectionDrop = (e: React.DragEvent) => {
@@ -73,7 +51,7 @@ export const ShopOverlay: React.FC<ShopOverlayProps> = ({
     const dragType = e.dataTransfer.getData("dragType");
     if (dragType !== "shelf") return;
 
-    const id = e.dataTransfer.getData("upgradeId") as UpgradeId;
+    const id = e.dataTransfer.getData("upgradeId") as ModuleId;
     const shelfIndexStr = e.dataTransfer.getData("shelfIndex");
     if (!id) return;
 
@@ -98,93 +76,18 @@ export const ShopOverlay: React.FC<ShopOverlayProps> = ({
     }
   };
 
-  const handleCartridgeClick = (upgrade: UpgradeEntry, index: number, isHack: boolean) => {
-    const owned = isHack ? isOwned(upgrade.id) : purchasedShelfSlots[index];
-    if (owned) return;
-    if (!canAfford(upgrade.cost)) return;
-
-    if (isHack) {
-      onPurchase(upgrade);
-    } else {
-      const firstEmpty = moduleSlots.indexOf(null);
-      if (firstEmpty !== -1) {
-        onPurchase(upgrade, firstEmpty);
-        setPurchasedShelfSlots(prev => {
-          const next = [...prev];
-          next[index] = true;
-          return next;
-        });
-      }
-    }
-  };
-
   // Rendering individual upgrade cartridge sitting on storefront shelves
-  const renderStorefrontCartridge = (upgrade: UpgradeEntry, index: number, isHack: boolean) => {
-    if (!isHack) {
-      return (
-        <ModuleCartridge
-          key={`mod-${index}-${upgrade.id}`}
-          mod={purchasedShelfSlots[index] ? null : upgrade}
-          index={index}
-          context="shop-shelf"
-          canAfford={canAfford}
-          onPurchase={onPurchase}
-          setHoveredUpgrade={setHoveredUpgrade}
-        />
-      );
-    }
-
-    const owned = isOwned(upgrade.id);
-    const affordable = canAfford(upgrade.cost);
-    const isDraggable = !owned && affordable;
-
+  const renderStorefrontCartridge = (upgrade: UpgradeEntry, index: number) => {
     return (
-      <div key={`hack-${index}-${upgrade.id}`} className="storefront-slot-wrapper">
-        {owned ? (
-          /* Empty blueprint socket where the vacuum-tube was plugged in */
-          <div className="cartridge-socket hack-socket">
-            <span className="socket-pin-circle" />
-            <div className="socket-label font-orbitron">VACANT</div>
-          </div>
-        ) : (
-          /* Draggable Retro Vacuum-Tube Cartridge and price below */
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', width: '100%' }}>
-            <div 
-              className={`shop-cartridge ${isDraggable ? 'draggable' : 'locked'}`}
-              draggable={isDraggable}
-              onDragStart={(e) => handleDragStart(e, upgrade.id, undefined)}
-              onClick={() => handleCartridgeClick(upgrade, index, true)}
-              onMouseEnter={() => setHoveredUpgrade(upgrade)}
-              onMouseLeave={() => setHoveredUpgrade(null)}
-              style={{
-                border: `2.5px solid ${upgrade.color}`,
-                boxShadow: `0 0 14px ${upgrade.color}45, inset 0 0 8px ${upgrade.color}25`
-              }}
-            >
-              <div className="cartridge-dome" style={{ background: `radial-gradient(circle at top, ${upgrade.color}35 0%, rgba(0,0,0,0) 80%)` }} />
-              <div className="cartridge-header" style={{ background: upgrade.color }}>
-                {upgrade.name}
-              </div>
-              <div className="cartridge-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', width: '100%', flex: 1 }}>
-                <div className="slot-badge font-orbitron" style={{ color: upgrade.color, fontSize: '18px', margin: 0, padding: 0 }}>
-                  {upgrade.short}
-                </div>
-              </div>
-              {/* Contact pins at base of cartridge */}
-              <div className="cartridge-pins">
-                <span style={{ background: upgrade.color }} />
-                <span style={{ background: upgrade.color }} />
-                <span style={{ background: upgrade.color }} />
-              </div>
-            </div>
-            
-            {/* Price Tag Below the Cartridge */}
-            <div className="font-orbitron text-gold" style={{ fontSize: '11px', fontWeight: 'bold', textShadow: '0 0 8px rgba(255, 215, 0, 0.45)', marginTop: '4px' }}>
-              {upgrade.cost}☉
-            </div>
-          </div>
-        )}
-      </div>
+      <ModuleCartridge
+        key={`mod-${index}-${upgrade.id}`}
+        mod={purchasedShelfSlots[index] ? null : upgrade}
+        index={index}
+        context="shop-shelf"
+        canAfford={canAfford}
+        onPurchase={onPurchase}
+        setHoveredUpgrade={setHoveredUpgrade}
+      />
     );
   };
 
@@ -211,29 +114,21 @@ export const ShopOverlay: React.FC<ShopOverlayProps> = ({
         <div style={{ display: 'flex', gap: '20px', margin: '15px 0' }}>
           
           {/* React-built Storefront Cabinet */}
-          <div className="storefront-cabinet">
+          <div className="storefront-cabinet" style={{ height: '240px' }}>
             
-            {/* Shelf Row 1: Hacks */}
+            {/* Shelf Row: Modules */}
             <div className="shop-shelf">
-              <div className="shelf-label font-orbitron">TOP SHELF: HACK REGISTER MODULES</div>
-              <div className="shelf-metal-beam hacks-beam">
-                {topShelfHacks.map((upgrade, idx) => renderStorefrontCartridge(upgrade, idx, true))}
-              </div>
-            </div>
-
-            {/* Shelf Row 2: Modules */}
-            <div className="shop-shelf">
-              <div className="shelf-label font-orbitron">SHELF II: AUXILIARY MODULE CORES</div>
-              <div className="shelf-metal-beam modules-beam">
-                {middleShelfModules.map((upgrade, idx) => renderStorefrontCartridge(upgrade, idx, false))}
-                {bottomShelfModules.map((upgrade, idx) => renderStorefrontCartridge(upgrade, idx + 2, false))}
+              <div className="shelf-label font-orbitron">MODULE SHELF: FLIGHT CORES CABINET</div>
+              <div className="shelf-metal-beam modules-beam" style={{ minHeight: '160px' }}>
+                {middleShelfModules.map((upgrade, idx) => renderStorefrontCartridge(upgrade, idx))}
+                {bottomShelfModules.map((upgrade, idx) => renderStorefrontCartridge(upgrade, idx + 2))}
               </div>
             </div>
 
           </div>
 
           {/* Immersive Scanner Readout Computer */}
-          <div className="scanner-readout-panel">
+          <div className="scanner-readout-panel" style={{ height: '240px' }}>
             <h3 className="font-orbitron">Bazaar Scanner Readout</h3>
             {hoveredUpgrade ? (
               <div className="readout-content animated-scan">
@@ -243,17 +138,12 @@ export const ShopOverlay: React.FC<ShopOverlayProps> = ({
                 <div className="readout-stat">CLASS: <strong className="text-cyan">{hoveredUpgrade.type.toUpperCase()}</strong></div>
                 <div className="readout-stat">COST: <strong className="text-gold font-orbitron">{hoveredUpgrade.cost} DATA CORES</strong></div>
                 <div className="readout-stat">REFUND VALUE: <strong className="text-gold font-orbitron">{Math.floor(hoveredUpgrade.cost / 2)} CORES</strong></div>
-                <p className="readout-desc">{hoveredUpgrade.desc}</p>
-                {hoveredUpgrade.blurb && (
-                  <div className="readout-blurb" style={{ fontStyle: 'italic', fontSize: '10.5px', color: 'var(--chrome-dim)', borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: '8px', paddingTop: '8px', lineHeight: '1.4' }}>
-                    "{hoveredUpgrade.blurb}"
-                  </div>
-                )}
+                <p className="readout-desc" style={{ fontSize: '10px', lineHeight: '1.3' }}>{hoveredUpgrade.desc}</p>
               </div>
             ) : (
               <div className="readout-idle">
                 <div className="scanner-sweeper" />
-                <div style={{ color: 'var(--chrome-dim)', fontStyle: 'italic', fontSize: '11px', textAlign: 'center', marginTop: '50px' }}>
+                <div style={{ color: 'var(--chrome-dim)', fontStyle: 'italic', fontSize: '11px', textAlign: 'center', marginTop: '10px' }}>
                   SCANNING FOR INPUT...<br/>
                   <span style={{ fontSize: '9px', opacity: 0.6 }}>DRAG CARTRIDGE FROM SHELF TO ACTIVE SLOTS BELOW</span>
                 </div>

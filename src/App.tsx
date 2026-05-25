@@ -4,6 +4,7 @@ import { GameState, UpgradeEntry, ModuleId, HackId } from './types'
 import { GameCanvas } from './components/canvas/GameCanvas'
 import { generatePlanets, generateExitPortal, generateBeacons, generateAsteroids } from './utils/levelGenerator'
 import { ShopOverlay } from './components/ui/ShopOverlay'
+import { HackSelectionOverlay } from './components/ui/HackSelectionOverlay'
 import { TelemetryPanel } from './components/ui/TelemetryPanel'
 import { BuildSpecsPanel } from './components/ui/BuildSpecsPanel'
 import { ObjectivesPanel } from './components/ui/ObjectivesPanel'
@@ -88,6 +89,7 @@ export default function App() {
   const [planets, setPlanets] = useState(initialSector.planets)
   const [portal, setPortal] = useState(initialSector.portal)
   const [isShopOpen, setIsShopOpen] = useState(false)
+  const [isHackStoreOpen, setIsHackStoreOpen] = useState(false)
 
   const gameStateRef = useRef<GameState>('IDLE')
   const dataCoresRef = useRef<number>(0)
@@ -226,7 +228,9 @@ export default function App() {
 
   // Handle Next Sector button trigger
   const handleNextLevel = () => {
-    if (level % 5 === 4) {
+    if (level % 10 === 7) {
+      setIsHackStoreOpen(true)
+    } else if (level % 5 === 4) {
       setIsShopOpen(true)
     } else {
       advanceLevel()
@@ -349,7 +353,9 @@ export default function App() {
   // Dev-only handler to cheat/advance sector with +3 Data Cores
   const handleDevAdvance = () => {
     setDataCores(current => Math.min(100, current + 3))
-    if (level % 5 === 4) {
+    if (level % 10 === 7) {
+      setIsHackStoreOpen(true)
+    } else if (level % 5 === 4) {
       setIsShopOpen(true)
     } else {
       advanceLevel()
@@ -393,11 +399,21 @@ export default function App() {
         <ShopOverlay
           dataCores={dataCores}
           moduleSlots={moduleSlots}
-          hackSlots={hackSlots}
           onPurchase={handlePurchase}
           onRearrange={handleRearrangeModules}
           onSell={handleSell}
           onClose={handleShopClose}
+        />
+      )}
+
+      {/* Hack Selection Overlay Modal */}
+      {isHackStoreOpen && (
+        <HackSelectionOverlay
+          onSelect={(hackId) => {
+            setHackSlots(prev => [...prev, hackId])
+            setIsHackStoreOpen(false)
+            advanceLevel()
+          }}
         />
       )}
 
