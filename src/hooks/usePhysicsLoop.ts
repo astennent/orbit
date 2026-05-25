@@ -69,6 +69,35 @@ export function usePhysicsLoop({
     }, 1200);
   }
 
+  // Centralized helper to resolve flight end outcomes (win vs loss)
+  const resolveFlightOutcome = (
+    pState: Probe,
+    lossState: 'STOPPED' | 'CRASHED',
+    contextName: string,
+    overrideSuccessState?: 'PORTAL_EXIT'
+  ) => {
+    if (selfDestructTimeoutRef.current) {
+      clearTimeout(selfDestructTimeoutRef.current)
+      selfDestructTimeoutRef.current = null
+    }
+    setShowSelfDestruct(false)
+
+    const isWin = overrideSuccessState === 'PORTAL_EXIT' || pState.data >= SECTOR_QUOTA
+    const successState = overrideSuccessState || 'WIN'
+
+    if (isWin) {
+      gameStateRef.current = successState
+      setGameState(successState)
+      const earnedDataCores = Math.floor(pState.data / SECTOR_QUOTA)
+      const bonus = purchasedUpgradesRef.current.includes(HackId.LUCKY_CHARM) ? 1 : 0
+      console.log(`${contextName} Win! Data:`, pState.data, "Data Cores:", earnedDataCores, "Bonus:", bonus)
+      onSecureDataCores(earnedDataCores + bonus)
+    } else {
+      gameStateRef.current = lossState
+      setGameState(lossState)
+    }
+  }
+
   // Self-destruct action
   const handleSelfDestruct = () => {
     if (gameStateRef.current !== 'FLIGHT') return
@@ -78,23 +107,7 @@ export function usePhysicsLoop({
     probeRef.current = pState
     setProbe(pState)
 
-    if (selfDestructTimeoutRef.current) {
-      clearTimeout(selfDestructTimeoutRef.current);
-      selfDestructTimeoutRef.current = null;
-    }
-    setShowSelfDestruct(false);
-
-    if (pState.data >= SECTOR_QUOTA) {
-      gameStateRef.current = 'WIN'
-      setGameState('WIN')
-      const earnedDataCores = Math.floor(pState.data / SECTOR_QUOTA)
-      const bonus = purchasedUpgradesRef.current.includes(HackId.LUCKY_CHARM) ? 1 : 0
-      console.log("Self-Destruct Win! Data:", pState.data, "Data Cores:", earnedDataCores, "Bonus:", bonus)
-      onSecureDataCores(earnedDataCores + bonus)
-    } else {
-      gameStateRef.current = 'STOPPED'
-      setGameState('STOPPED')
-    }
+    resolveFlightOutcome(pState, 'STOPPED', 'Self-Destruct')
   }
 
   // Clear timers on unmount
@@ -174,24 +187,7 @@ export function usePhysicsLoop({
             pState.vel.set(0, 0, 0)
             probeRef.current = pState
             setProbe(pState)
-
-            if (selfDestructTimeoutRef.current) {
-              clearTimeout(selfDestructTimeoutRef.current);
-              selfDestructTimeoutRef.current = null;
-            }
-            setShowSelfDestruct(false);
-
-            if (pState.data >= SECTOR_QUOTA) {
-              gameStateRef.current = 'WIN'
-              setGameState('WIN')
-              const earnedDataCores = Math.floor(pState.data / SECTOR_QUOTA)
-              const bonus = purchasedUpgradesRef.current.includes(HackId.LUCKY_CHARM) ? 1 : 0
-              console.log("Gas Giant Halt Win! Data:", pState.data, "Data Cores:", earnedDataCores, "Bonus:", bonus)
-              onSecureDataCores(earnedDataCores + bonus)
-            } else {
-              gameStateRef.current = 'STOPPED'
-              setGameState('STOPPED')
-            }
+            resolveFlightOutcome(pState, 'STOPPED', 'Gas Giant Halt')
             return
           }
         }
@@ -214,7 +210,7 @@ export function usePhysicsLoop({
         if (dist < planet.atmosphereRadius) {
           let drag = ATMOSPHERE_DRAG
           if (planet.isGasGiant && dist < planet.radius) {
-            drag = ATMOSPHERE_DRAG * 3 // extremely high core drag when passing through a gas giant!
+            drag = ATMOSPHERE_DRAG * 30.0 // extremely high 30x core drag when passing through a gas giant!
           }
           pState.vel.multiplyScalar(1.0 - drag * PHYSICS_DT)
         }
@@ -226,22 +222,7 @@ export function usePhysicsLoop({
       if (hitPlanet) {
         probeRef.current = pState
         setProbe(pState)
-        if (pState.data >= SECTOR_QUOTA) {
-          gameStateRef.current = 'WIN'
-          setGameState('WIN')
-          const earnedDataCores = Math.floor(pState.data / SECTOR_QUOTA)
-          const bonus = purchasedUpgradesRef.current.includes(HackId.LUCKY_CHARM) ? 1 : 0
-          console.log("Planet Crash Win! Data:", pState.data, "Data Cores:", earnedDataCores, "Bonus:", bonus)
-          onSecureDataCores(earnedDataCores + bonus)
-        } else {
-          gameStateRef.current = 'CRASHED'
-          setGameState('CRASHED')
-        }
-        if (selfDestructTimeoutRef.current) {
-          clearTimeout(selfDestructTimeoutRef.current);
-          selfDestructTimeoutRef.current = null;
-        }
-        setShowSelfDestruct(false);
+        resolveFlightOutcome(pState, 'CRASHED', 'Planet Crash')
         return
       }
 
@@ -257,23 +238,10 @@ export function usePhysicsLoop({
         handleTrigger(TriggerId.PROBE_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
         probeRef.current = pState
         setProbe(pState)
-        if (pState.data >= SECTOR_QUOTA) {
-          gameStateRef.current = 'WIN'
-          setGameState('WIN')
-          const earnedDataCores = Math.floor(pState.data / SECTOR_QUOTA)
-          const bonus = purchasedUpgradesRef.current.includes(HackId.LUCKY_CHARM) ? 1 : 0
-          console.log("Out of Bounds Win! Data:", pState.data, "Data Cores:", earnedDataCores, "Bonus:", bonus)
-          onSecureDataCores(earnedDataCores + bonus)
-        } else {
-          gameStateRef.current = 'CRASHED'
-          setGameState('CRASHED')
+        if (pState.data < SECTOR_QUOTA) {
           triggerDataToast("OUT OF BOUNDS!", pState.pos, '#ff4757');
         }
-        if (selfDestructTimeoutRef.current) {
-          clearTimeout(selfDestructTimeoutRef.current);
-          selfDestructTimeoutRef.current = null;
-        }
-        setShowSelfDestruct(false);
+        resolveFlightOutcome(pState, 'CRASHED', 'Out of Bounds')
         return;
       }
 
@@ -451,22 +419,7 @@ export function usePhysicsLoop({
       if (hitDestroyedShip) {
         probeRef.current = pState
         setProbe(pState)
-        if (pState.data >= SECTOR_QUOTA) {
-          gameStateRef.current = 'WIN'
-          setGameState('WIN')
-          const earnedDataCores = Math.floor(pState.data / SECTOR_QUOTA)
-          const bonus = purchasedUpgradesRef.current.includes(HackId.LUCKY_CHARM) ? 1 : 0
-          console.log("Asteroid Crash Win! Data:", pState.data, "Data Cores:", earnedDataCores, "Bonus:", bonus)
-          onSecureDataCores(earnedDataCores + bonus)
-        } else {
-          gameStateRef.current = 'CRASHED'
-          setGameState('CRASHED')
-        }
-        if (selfDestructTimeoutRef.current) {
-          clearTimeout(selfDestructTimeoutRef.current);
-          selfDestructTimeoutRef.current = null;
-        }
-        setShowSelfDestruct(false);
+        resolveFlightOutcome(pState, 'CRASHED', 'Asteroid Crash')
         return
       }
 
@@ -478,17 +431,7 @@ export function usePhysicsLoop({
         probeRef.current = pState
         setProbe(pState)
         triggerDataToast(`+${SECTOR_QUOTA} Portal Escape!`, portal.pos, '#ffd700')
-        gameStateRef.current = 'PORTAL_EXIT'
-        setGameState('PORTAL_EXIT')
-        const earnedDataCores = Math.floor(pState.data / SECTOR_QUOTA)
-        const bonus = purchasedUpgradesRef.current.includes(HackId.LUCKY_CHARM) ? 1 : 0
-        console.log("Portal Escape Win! Data:", pState.data, "Data Cores:", earnedDataCores, "Bonus:", bonus)
-        onSecureDataCores(earnedDataCores + bonus)
-        if (selfDestructTimeoutRef.current) {
-          clearTimeout(selfDestructTimeoutRef.current);
-          selfDestructTimeoutRef.current = null;
-        }
-        setShowSelfDestruct(false);
+        resolveFlightOutcome(pState, 'CRASHED', 'Portal Escape', 'PORTAL_EXIT')
         return
       }
 
@@ -504,17 +447,7 @@ export function usePhysicsLoop({
         }
         setShowSelfDestruct(false);
 
-        if (pState.data >= SECTOR_QUOTA) {
-          gameStateRef.current = 'WIN'
-          setGameState('WIN')
-          const earnedDataCores = Math.floor(pState.data / SECTOR_QUOTA)
-          const bonus = purchasedUpgradesRef.current.includes(HackId.LUCKY_CHARM) ? 1 : 0
-          console.log("Safe Orbit Win! Data:", pState.data, "Data Cores:", earnedDataCores, "Bonus:", bonus)
-          onSecureDataCores(earnedDataCores + bonus)
-        } else {
-          gameStateRef.current = 'STOPPED'
-          setGameState('STOPPED')
-        }
+        resolveFlightOutcome(pState, 'STOPPED', 'Safe Orbit')
         return
       }
 
