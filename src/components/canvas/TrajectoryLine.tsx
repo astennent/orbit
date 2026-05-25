@@ -6,6 +6,7 @@ import {
   ATMOSPHERE_DRAG,
   PHYSICS_DT,
   MIN_SPEED_THRESHOLD,
+  GAS_GIANT_MIN_SPEED_THRESHOLD,
   MAX_TRAJECTORY_STEPS
 } from '../../constants'
 
@@ -42,8 +43,8 @@ export function TrajectoryLine({ startPos, startVel, planets }: TrajectoryLinePr
 
         const dist = diff.length()
         
-        // Collision with core: stop predicting
-        if (dist < planet.radius) {
+        // Collision with core: stop predicting (Skipped for Gas Giants!)
+        if (!planet.isGasGiant && dist < planet.radius) {
           rawPoints.push({ pos: tempPos.clone(), inAtmosphere: false })
           hitPlanet = true
           break
@@ -56,7 +57,14 @@ export function TrajectoryLine({ startPos, startVel, planets }: TrajectoryLinePr
 
         // Compute gravity pull acceleration
         if (dist > 0.1) {
-          const force = (GRAVITATIONAL_CONSTANT * planet.mass) / (dist * dist)
+          let force: number
+          if (planet.isGasGiant && dist < planet.radius) {
+            // Newton's Shell Theorem: linear gravity inside Gas Giant cores
+            force = (GRAVITATIONAL_CONSTANT * planet.mass * dist) / (planet.radius * planet.radius * planet.radius)
+          } else {
+            // Inverse-square outside core
+            force = (GRAVITATIONAL_CONSTANT * planet.mass) / (dist * dist)
+          }
           const dir = diff.normalize()
           tempAcc.addScaledVector(dir, force)
         }
@@ -68,7 +76,18 @@ export function TrajectoryLine({ startPos, startVel, planets }: TrajectoryLinePr
 
       // Apply atmospheric drag/friction slowdown
       if (inAtmosphere) {
-        tempVel.multiplyScalar(1 - ATMOSPHERE_DRAG * PHYSICS_DT)
+        let drag = ATMOSPHERE_DRAG
+        for (const planet of planets) {
+          if (planet.isGasGiant) {
+            const diff = new THREE.Vector3().subVectors(planet.pos, tempPos)
+            diff.y = 0
+            if (diff.length() < planet.radius) {
+              drag = ATMOSPHERE_DRAG * 30.0 // 30x core drag inside Gas Giant
+              break
+            }
+          }
+        }
+        tempVel.multiplyScalar(1 - drag * PHYSICS_DT)
       }
 
       // Integrate step
@@ -80,8 +99,20 @@ export function TrajectoryLine({ startPos, startVel, planets }: TrajectoryLinePr
         inAtmosphere
       })
 
-      // Stop predicting if velocity hits absolute zero
-      if (tempVel.length() < MIN_SPEED_THRESHOLD) {
+      // Stop predicting if velocity hits threshold (GAS_GIANT_MIN_SPEED_THRESHOLD inside Gas Giants, MIN_SPEED_THRESHOLD otherwise)
+      let stopThreshold = MIN_SPEED_THRESHOLD
+      for (const planet of planets) {
+        if (planet.isGasGiant) {
+          const diff = new THREE.Vector3().subVectors(planet.pos, tempPos)
+          diff.y = 0
+          if (diff.length() < planet.radius) {
+            stopThreshold = GAS_GIANT_MIN_SPEED_THRESHOLD
+            break
+          }
+        }
+      }
+
+      if (tempVel.length() < stopThreshold) {
         break
       }
     }

@@ -9,6 +9,7 @@ import {
   ATMOSPHERE_DRAG,
   PHYSICS_DT,
   MIN_SPEED_THRESHOLD,
+  GAS_GIANT_MIN_SPEED_THRESHOLD,
   SECTOR_QUOTA,
   OUT_OF_BOUNDS_LIMIT
 } from '../constants'
@@ -156,6 +157,7 @@ export function usePhysicsLoop({
 
             if (pState.integrity <= 0) {
               hitPlanet = true
+              handleTrigger(TriggerId.PLANET_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
               handleTrigger(TriggerId.PROBE_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
               handleTrigger(TriggerId.PROBE_DEATH_BY_COLLISION, pState, purchasedUpgradesRef.current, { triggerDataToast });
               pState.vel.set(0, 0, 0); // Stop probe movement on death!
@@ -166,15 +168,54 @@ export function usePhysicsLoop({
           break
         }
 
+        // Gas Giant Core Halt Check
+        if (planet.isGasGiant && dist < planet.radius) {
+          if (pState.vel.length() < GAS_GIANT_MIN_SPEED_THRESHOLD) {
+            pState.vel.set(0, 0, 0)
+            probeRef.current = pState
+            setProbe(pState)
+
+            if (selfDestructTimeoutRef.current) {
+              clearTimeout(selfDestructTimeoutRef.current);
+              selfDestructTimeoutRef.current = null;
+            }
+            setShowSelfDestruct(false);
+
+            if (pState.data >= SECTOR_QUOTA) {
+              gameStateRef.current = 'WIN'
+              setGameState('WIN')
+              const earnedDataCores = Math.floor(pState.data / SECTOR_QUOTA)
+              const bonus = purchasedUpgradesRef.current.includes(HackId.LUCKY_CHARM) ? 1 : 0
+              console.log("Gas Giant Halt Win! Data:", pState.data, "Data Cores:", earnedDataCores, "Bonus:", bonus)
+              onSecureDataCores(earnedDataCores + bonus)
+            } else {
+              gameStateRef.current = 'STOPPED'
+              setGameState('STOPPED')
+            }
+            return
+          }
+        }
+
+
         if (dist > 0.2) {
-          const forceMagnitude = (GRAVITATIONAL_CONSTANT * planet.mass) / (dist * dist)
+          let forceMagnitude: number
+          if (dist < planet.radius) {
+            // Newton's Shell Theorem: linear gravity scaling inside the planet core to prevent infinite gravity spikes (singularity)
+            forceMagnitude = (GRAVITATIONAL_CONSTANT * planet.mass * dist) / (planet.radius * planet.radius * planet.radius)
+          } else {
+            // Standard inverse-square law outside the planet core
+            forceMagnitude = (GRAVITATIONAL_CONSTANT * planet.mass) / (dist * dist)
+          }
           const direction = diff.normalize()
           acc.addScaledVector(direction, forceMagnitude)
         }
 
         // 2. Atmospheric Drag
         if (dist < planet.atmosphereRadius) {
-          const drag = ATMOSPHERE_DRAG
+          let drag = ATMOSPHERE_DRAG
+          if (planet.isGasGiant && dist < planet.radius) {
+            drag = ATMOSPHERE_DRAG * 3 // extremely high core drag when passing through a gas giant!
+          }
           pState.vel.multiplyScalar(1.0 - drag * PHYSICS_DT)
         }
       }

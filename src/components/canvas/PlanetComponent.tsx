@@ -212,7 +212,7 @@ export function PlanetComponent({ planet }: PlanetComponentProps) {
             <div style={{ marginTop: '5px', color: 'var(--chrome-dim)', fontSize: '10px' }}>
               Exerts active gravitational pull. Atmosphere applies friction drag slowdown but boosts telemetry data collection rate by <strong>10x</strong>!{' '}
               {planet.isGasGiant ? (
-                <strong style={{ color: '#2ed573', display: 'block', marginTop: '3px' }}>Gaseous Core: passes through safely with no damage!</strong>
+                <strong style={{ color: '#2ed573', display: 'block', marginTop: '3px' }}>Gaseous Core: passes through safely with no damage, but experiences extremely heavy core drag!</strong>
               ) : (
                 <strong style={{ color: '#ff4757', display: 'block', marginTop: '3px' }}>Rocky Surface: avoid impact collision!</strong>
               )}
