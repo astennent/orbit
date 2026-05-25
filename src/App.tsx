@@ -438,6 +438,7 @@ export default function App() {
       {/* THREEJS Visual Canvas */}
       <GameCanvas
         gameState={gameState}
+        level={level}
         probe={probe}
         planets={planets}
         portal={portal}

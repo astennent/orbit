@@ -1,4 +1,4 @@
-import { useRef, useMemo, useEffect, useState } from 'react'
+import { useRef, useMemo, useEffect, useState, Suspense } from 'react'
 import { Canvas, ThreeEvent, useThree, useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
@@ -8,6 +8,7 @@ import { ExitPortalComponent } from './ExitPortalComponent'
 import { ProbeComponent } from './ProbeComponent'
 import { TrajectoryLine } from './TrajectoryLine'
 import { AsteroidComponent } from './AsteroidComponent'
+import { Nebula } from './Nebula'
 import { LAUNCH_SPEED_MULTIPLIER, OUT_OF_BOUNDS_LIMIT } from '../constants'
 
 interface CameraControllerProps {
@@ -112,6 +113,7 @@ function CameraController({ probe, gameState }: CameraControllerProps) {
 
 interface GameCanvasProps {
   gameState: GameState
+  level: number
   probe: Probe
   planets: Planet[]
   portal: ExitPortal
@@ -128,6 +130,7 @@ interface GameCanvasProps {
 
 export function GameCanvas({
   gameState,
+  level,
   probe,
   planets,
   portal,
@@ -234,12 +237,17 @@ export function GameCanvas({
   return (
     <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}>
       <Canvas
-        camera={{ position: [0, 18, 22], fov: 50, near: 0.1, far: 100 }}
+        camera={{ position: [0, 18, 22], fov: 50, near: 0.1, far: 10000 }}
         orthographic={false}
       >
         <CameraController probe={probe} gameState={gameState} />
         {/* Deep space color */}
         <color attach="background" args={['#020810']} />
+
+        {/* Volumetric background clouds */}
+        <Suspense fallback={null}>
+          <Nebula key={level} />
+        </Suspense>
 
         {/* Raygun Gothic lighting — warm key light + cold fill */}
         <ambientLight intensity={0.35} color="#b0c8f0" />
