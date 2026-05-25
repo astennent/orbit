@@ -156,8 +156,8 @@ export function usePhysicsLoop({
 
             if (pState.integrity <= 0) {
               hitPlanet = true
-              handleTrigger(TriggerId.PLANET_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
               handleTrigger(TriggerId.PROBE_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
+              handleTrigger(TriggerId.PROBE_DEATH_BY_COLLISION, pState, purchasedUpgradesRef.current, { triggerDataToast });
               pState.vel.set(0, 0, 0); // Stop probe movement on death!
             } else {
               handleTrigger(TriggerId.PLANET_BOUNCE, pState, purchasedUpgradesRef.current, { triggerDataToast });
@@ -350,6 +350,7 @@ export function usePhysicsLoop({
           if (pState.integrity <= 0) {
             hitDestroyedShip = true
             handleTrigger(TriggerId.PROBE_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
+            handleTrigger(TriggerId.PROBE_DEATH_BY_COLLISION, pState, purchasedUpgradesRef.current, { triggerDataToast });
             pState.vel.set(0, 0, 0); // Stop probe movement on death!
           }
 

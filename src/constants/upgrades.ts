@@ -53,7 +53,7 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
     color: '#ff4757',
     desc: "Instantly recovers 300 data.",
     blurb: "Sure, your probe exploded, but the telemetry logs are absolutely gorgeous.",
-    triggerId: TriggerId.PROBE_DEATH,
+    triggerId: TriggerId.PROBE_DEATH_BY_COLLISION,
     image: blackBoxImg
   },
   [ModuleId.WIND_SHIELD]: {

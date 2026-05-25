@@ -32,7 +32,7 @@ export interface GameLoopState {
   currentLevelData: LevelData;
 }
 
-export type GameState = 
+export type GameState =
   | 'IDLE'         // Before launch, aiming trajectory visible
   | 'LAUNCHING'    // Holding down, dragging the launcher
   | 'FLIGHT'       // Probe is moving, hands-off physics running
@@ -116,9 +116,9 @@ export enum TriggerId {
   HIT_ASTEROID = 'HIT_ASTEROID',
   HIT_BEACON = 'HIT_BEACON',
   PLANET_BOUNCE = 'PLANET_BOUNCE',
-  PLANET_DEATH = 'PLANET_DEATH',
   PROBE_DEATH = 'PROBE_DEATH',
   OUT_OF_BOUNDS = 'OUT_OF_BOUNDS',
+  PROBE_DEATH_BY_COLLISION = 'PROBE_DEATH_BY_COLLISION',
 }
 
 export interface UpgradeEntry {
