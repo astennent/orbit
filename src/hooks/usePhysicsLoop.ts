@@ -14,8 +14,11 @@ import {
   OUT_OF_BOUNDS_LIMIT
 } from '../constants'
 
-const BASE_PLANET_DAMAGE = 5
-const GRAVITY_STABILIZER_SHIELD_ABSORPTION = 2
+import {
+  BASE_PLANET_DAMAGE,
+  GRAVITY_STABILIZER_SHIELD_ABSORPTION,
+  GRAVITY_STABILIZER_V2_SHIELD_ABSORPTION
+} from '../constants/moduleConstants'
 
 interface UsePhysicsLoopProps {
   gameState: GameState
@@ -181,7 +184,9 @@ export function usePhysicsLoop({
           // Trigger collision logic only if this is the first frame of contact
           if (activeCollidingPlanetIdRef.current !== planet.id) {
             const gsCount = activeModulesRef.current.filter(id => id === ModuleId.GRAVITY_STABILIZER).length
-            const damage = Math.max(1, BASE_PLANET_DAMAGE - gsCount * GRAVITY_STABILIZER_SHIELD_ABSORPTION)
+            const gs2Count = activeModulesRef.current.filter(id => id === ModuleId.GRAVITY_STABILIZER_V2).length
+            const absorption = gsCount * GRAVITY_STABILIZER_SHIELD_ABSORPTION + gs2Count * GRAVITY_STABILIZER_V2_SHIELD_ABSORPTION
+            const damage = Math.max(1, BASE_PLANET_DAMAGE - absorption)
 
             pState.integrity = Math.max(0, pState.integrity - damage)
             triggerDataToast(`-${damage} Hull`, pState.pos, '#ff4757')
@@ -340,7 +345,7 @@ export function usePhysicsLoop({
         timeRate *= 10.0
       }
       if (pState.scoopActiveTimer !== undefined && pState.scoopActiveTimer > 0) {
-        timeRate *= 10.0
+        timeRate *= (pState.scoopMultiplier || 10.0)
       }
 
       pState.data += timeRate * PHYSICS_DT

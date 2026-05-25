@@ -351,7 +351,17 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
             if (shelfIdx !== -1 && purchasedShelfSlots && purchasedShelfSlots[shelfIdx]) return;
             if (canAfford && !canAfford(upgrade.cost)) return;
 
-            // Slot is filled, purchase drop is bypassed.
+            // FUSION UPGRADE DROP: Dragging shelf module onto an identical non-upgraded equipped module!
+            if (mod && mod.id === id && !id.endsWith('_V2')) {
+              if (onPurchase) onPurchase(upgrade, index);
+              if (shelfIdx !== -1 && setPurchasedShelfSlots) {
+                setPurchasedShelfSlots(prev => {
+                  const next = [...prev];
+                  next[shelfIdx] = true;
+                  return next;
+                });
+              }
+            }
             return;
           } else if (dragType === "belt") {
             const sourceSlot = parseInt(e.dataTransfer.getData("sourceSlotIndex"), 10);

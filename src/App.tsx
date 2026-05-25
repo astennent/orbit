@@ -15,7 +15,7 @@ import { useSlingshotControls } from './hooks/useSlingshotControls'
 import { getStatusDisplay } from './utils/statusFormatters'
 import { GRAVITATIONAL_CONSTANT, SECTOR_QUOTA } from './constants'
 import { createFreshProbe } from './utils/probeUtils'
-import { UPGRADE_REGISTRY } from './constants/upgrades'
+import { UPGRADE_REGISTRY, UPGRADE_MAPPING } from './constants/upgrades'
 
 export default function App() {
   // --- Core Game State React Hooks ---
@@ -244,7 +244,13 @@ export default function App() {
       if (slotIndex !== undefined) {
         setModuleSlots(prev => {
           const next = [...prev]
-          next[slotIndex] = upgrade.id as ModuleId
+          const existing = next[slotIndex]
+          if (existing && existing === upgrade.id && !existing.endsWith('_V2')) {
+            next[slotIndex] = UPGRADE_MAPPING[existing]
+            console.log(`[Fusion Purchase] Upgraded slot ${slotIndex} to V2!`)
+          } else {
+            next[slotIndex] = upgrade.id as ModuleId
+          }
           return next
         })
       }
@@ -257,6 +263,19 @@ export default function App() {
   const handleRearrangeModules = (sourceIndex: number, targetIndex: number) => {
     setModuleSlots(prev => {
       const next = [...prev]
+      const sourceId = next[sourceIndex]
+      const targetId = next[targetIndex]
+
+      if (sourceId && targetId && sourceId === targetId && !sourceId.endsWith('_V2')) {
+        const upgradedId = UPGRADE_MAPPING[sourceId]
+        if (upgradedId) {
+          next[targetIndex] = upgradedId
+          next[sourceIndex] = null
+          console.log(`[Fusion Rearrange] Upgraded slot ${targetIndex} to ${upgradedId}!`)
+          return next
+        }
+      }
+
       const temp = next[sourceIndex]
       next[sourceIndex] = next[targetIndex]
       next[targetIndex] = temp

@@ -50,6 +50,7 @@ export interface Probe {
   maxIntegrity: number;
   magnetRadius: number;
   scoopActiveTimer?: number;
+  scoopMultiplier?: number;
 }
 
 export interface Planet {
@@ -95,11 +96,17 @@ export interface Asteroid {
 
 export enum ModuleId {
   ATMOSPHERIC_SCOOP = 'ATMOSPHERIC_SCOOP',
+  ATMOSPHERIC_SCOOP_V2 = 'ATMOSPHERIC_SCOOP_V2',
   RAMJET = 'RAMJET',
+  RAMJET_V2 = 'RAMJET_V2',
   GRAVITY_STABILIZER = 'GRAVITY_STABILIZER',
+  GRAVITY_STABILIZER_V2 = 'GRAVITY_STABILIZER_V2',
   BLACK_BOX = 'BLACK_BOX',
+  BLACK_BOX_V2 = 'BLACK_BOX_V2',
   WIND_SHIELD = 'WIND_SHIELD',
+  WIND_SHIELD_V2 = 'WIND_SHIELD_V2',
   MAGNETO_SCRAPPER = 'MAGNETO_SCRAPPER',
+  MAGNETO_SCRAPPER_V2 = 'MAGNETO_SCRAPPER_V2',
 }
 
 export enum HackId {
