@@ -175,10 +175,15 @@ export function GameCanvas({
   // Generates custom starry background vertices
   const starPositions = useMemo(() => {
     const coords = []
-    for (let i = 0; i < 500; i++) {
-      const x = (Math.random() - 0.5) * 80
-      const y = (Math.random() - 0.5) * 60
-      const z = -10 - Math.random() * 20 // Keep them deep in the background
+    const count = 1200 // Denser star count to cover the wider perimeter
+    const radius = 180.0 // Extends well past the 80-radius boundary to prevent screen-edge clipping
+    for (let i = 0; i < count; i++) {
+      // Spread stars across the X and Z axes (the gameplay plane)
+      const x = (Math.random() - 0.5) * radius * 2
+      const z = (Math.random() - 0.5) * radius * 2
+      // Position them below the gameplay plane (Y depth) to form a true background starfield
+      const y = -12.0 - Math.random() * 25.0
+      
       coords.push(x, y, z)
     }
     return new Float32Array(coords)
