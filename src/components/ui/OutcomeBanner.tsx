@@ -33,14 +33,15 @@ export const OutcomeBanner: React.FC<OutcomeBannerProps> = ({
   return (
     <div style={{
       position: 'absolute',
-      top: '25px',
+      bottom: '125px',
       left: '50%',
       transform: 'translateX(-50%)',
       zIndex: 1000,
       pointerEvents: 'auto',
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center'
+      alignItems: 'center',
+      gap: '10px'
     }}>
       {gameState === 'FLIGHT' ? (
         <button 

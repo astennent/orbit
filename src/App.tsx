@@ -249,7 +249,7 @@ export default function App() {
 
   // Handle Next Sector button trigger
   const handleNextLevel = () => {
-    if (level % 5 === 0) {
+    if (level % 5 === 4) {
       setIsShopOpen(true)
     } else {
       advanceLevel()
@@ -372,7 +372,7 @@ export default function App() {
   // Dev-only handler to cheat/advance sector with +3 Data Cores
   const handleDevAdvance = () => {
     setDataCores(current => Math.min(100, current + 3))
-    if (level % 5 === 0) {
+    if (level % 5 === 4) {
       setIsShopOpen(true)
     } else {
       advanceLevel()
