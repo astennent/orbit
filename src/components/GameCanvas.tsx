@@ -8,7 +8,7 @@ import { ExitPortalComponent } from './ExitPortalComponent'
 import { ProbeComponent } from './ProbeComponent'
 import { TrajectoryLine } from './TrajectoryLine'
 import { AsteroidComponent } from './AsteroidComponent'
-import { LAUNCH_SPEED_MULTIPLIER } from '../constants'
+import { LAUNCH_SPEED_MULTIPLIER, OUT_OF_BOUNDS_LIMIT } from '../constants'
 
 interface CameraControllerProps {
   probe: Probe
@@ -403,6 +403,21 @@ export function GameCanvas({
 
         {/* The Target Exit Portal */}
         <ExitPortalComponent portal={portal} />
+
+        {/* Out of Bounds Red Warning Ring */}
+        <mesh position={[0, -0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[OUT_OF_BOUNDS_LIMIT - 0.25, OUT_OF_BOUNDS_LIMIT + 0.25, 128]} />
+          <meshStandardMaterial
+            color="#ff3344"
+            roughness={0.2}
+            metalness={0.95}
+            emissive="#ff0022"
+            emissiveIntensity={1.8}
+            transparent
+            opacity={0.35}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
 
         {/* Predictive Trajectory Line */}
         <TrajectoryLine

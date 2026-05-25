@@ -8,7 +8,8 @@ import {
   ATMOSPHERE_DRAG,
   PHYSICS_DT,
   MIN_SPEED_THRESHOLD,
-  SECTOR_QUOTA
+  SECTOR_QUOTA,
+  OUT_OF_BOUNDS_LIMIT
 } from '../constants'
 
 interface UsePhysicsLoopProps {
@@ -202,7 +203,7 @@ export function usePhysicsLoop({
       pState.pos.addScaledVector(pState.vel, PHYSICS_DT)
 
       // 3.5. Out of bounds checking
-      if (pState.pos.length() > 80) {
+      if (pState.pos.length() > OUT_OF_BOUNDS_LIMIT) {
         handleTrigger(TriggerId.OUT_OF_BOUNDS, pState, purchasedUpgradesRef.current, { triggerDataToast });
         pState.integrity = 0;
         if (pState.data >= SECTOR_QUOTA) {

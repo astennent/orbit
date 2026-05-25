@@ -12,7 +12,7 @@ import { OutcomeBanner } from './components/OutcomeBanner'
 import { usePhysicsLoop } from './hooks/usePhysicsLoop'
 import { useSlingshotControls } from './hooks/useSlingshotControls'
 import { getStatusDisplay } from './utils/statusFormatters'
-import { GRAVITATIONAL_CONSTANT, ATMOSPHERE_DRAG, SECTOR_QUOTA } from './constants'
+import { GRAVITATIONAL_CONSTANT, SECTOR_QUOTA } from './constants'
 import { UPGRADE_REGISTRY } from './constants/upgrades'
 
 export default function App() {
@@ -532,18 +532,6 @@ export default function App() {
           probe={probe}
           gravitationalConstant={GRAVITATIONAL_CONSTANT}
         />
-
-        <div className="panel" style={{ fontSize: '11px', color: 'var(--chrome-dim)' }}>
-          <h3 style={{ margin: '0 0 10px 0', fontSize: '12px', color: '#fff' }}>Sector Core Details</h3>
-          {planets.map(p => (
-            <div key={p.id} style={{ marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px' }}>
-              <div style={{ color: '#fff', fontWeight: 'bold', textTransform: 'uppercase' }}>{p.name}</div>
-              <div>ATMOSPHERE: <span className="text-cyan font-orbitron">{p.atmosphereRadius.toFixed(1)} km</span></div>
-              <div>RADIUS: <span className="text-cyan font-orbitron">{p.radius.toFixed(1)} km</span></div>
-            </div>
-          ))}
-          <div>DRAG COEFFICIENT: <span className="text-cyan font-orbitron">{ATMOSPHERE_DRAG}</span></div>
-        </div>
       </div>
 
       {/* Right Column: Build Specs & Objectives Panels */}
@@ -572,7 +560,6 @@ export default function App() {
 
       {/* Bottom HUD: Data progress and control tray */}
       <LaunchControlPanel
-        gameState={gameState}
         probeData={probe.data}
         sectorQuota={SECTOR_QUOTA}
       />
