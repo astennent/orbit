@@ -13,6 +13,9 @@ import {
   OUT_OF_BOUNDS_LIMIT
 } from '../constants'
 
+const BASE_PLANET_DAMAGE = 5
+const GRAVITY_STABILIZER_SHIELD_ABSORPTION = 2
+
 interface UsePhysicsLoopProps {
   gameState: GameState
   setGameState: (state: GameState) => void
@@ -50,6 +53,7 @@ export function usePhysicsLoop({
   const asteroidsRef = useRef<Asteroid[]>(initialSector.asteroids)
   const selfDestructTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const wasInsideAtmosphereRef = useRef(false)
+  const activeCollidingPlanetIdRef = useRef<string | null>(null)
 
   const triggerDataToast = (text: string, pos: THREE.Vector3, color?: string) => {
     const newToast: DataToast = {
@@ -119,6 +123,7 @@ export function usePhysicsLoop({
       // 1. Gravity Integration
       const acc = new THREE.Vector3()
       let hitPlanet = false
+      let currentCollidingPlanetId: string | null = null
 
       for (const planet of planets) {
         const diff = new THREE.Vector3().subVectors(planet.pos, pState.pos)
@@ -127,6 +132,8 @@ export function usePhysicsLoop({
 
         // Planet Impact (Bounce Check) - Skipped for Gas Giants!
         if (!planet.isGasGiant && dist < planet.radius + 0.35) {
+          currentCollidingPlanetId = planet.id
+
           const normal = new THREE.Vector3().subVectors(pState.pos, planet.pos)
           normal.y = 0
           normal.normalize()
@@ -139,16 +146,22 @@ export function usePhysicsLoop({
             pState.vel.addScaledVector(normal, -(1 + e) * dot)
           }
 
-          pState.integrity = Math.max(0, pState.integrity - 5)
-          triggerDataToast(`-5 Hull`, pState.pos, '#ff4757')
+          // Trigger collision logic only if this is the first frame of contact
+          if (activeCollidingPlanetIdRef.current !== planet.id) {
+            const gsCount = purchasedUpgradesRef.current.filter(id => id === ModuleId.GRAVITY_STABILIZER).length
+            const damage = Math.max(1, BASE_PLANET_DAMAGE - gsCount * GRAVITY_STABILIZER_SHIELD_ABSORPTION)
 
-          if (pState.integrity <= 0) {
-            hitPlanet = true
-            handleTrigger(TriggerId.PLANET_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
-            handleTrigger(TriggerId.PROBE_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
-            pState.vel.set(0, 0, 0); // Stop probe movement on death!
-          } else {
-            handleTrigger(TriggerId.PLANET_BOUNCE, pState, purchasedUpgradesRef.current, { triggerDataToast });
+            pState.integrity = Math.max(0, pState.integrity - damage)
+            triggerDataToast(`-${damage} Hull`, pState.pos, '#ff4757')
+
+            if (pState.integrity <= 0) {
+              hitPlanet = true
+              handleTrigger(TriggerId.PLANET_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
+              handleTrigger(TriggerId.PROBE_DEATH, pState, purchasedUpgradesRef.current, { triggerDataToast });
+              pState.vel.set(0, 0, 0); // Stop probe movement on death!
+            } else {
+              handleTrigger(TriggerId.PLANET_BOUNCE, pState, purchasedUpgradesRef.current, { triggerDataToast });
+            }
           }
           break
         }
@@ -165,6 +178,9 @@ export function usePhysicsLoop({
           pState.vel.multiplyScalar(1.0 - drag * PHYSICS_DT)
         }
       }
+
+      // Update active colliding planet ID ref for consecutive frame checks
+      activeCollidingPlanetIdRef.current = currentCollidingPlanetId
 
       if (hitPlanet) {
         probeRef.current = pState

@@ -49,11 +49,9 @@ function executeModuleEffect(moduleId: ModuleId, pState: Probe, context: Trigger
       break;
 
     case ModuleId.GRAVITY_STABILIZER:
-      console.log("Triggered GRAVITY_STABILIZER! Collecting 100 data and absorbing bounce impact.");
+      console.log("Triggered GRAVITY_STABILIZER! Collecting 100 data.");
       pState.data += 100;
-      // Absorbs 3 out of 5 damage by restoring 3 integrity
-      pState.integrity = Math.min(pState.maxIntegrity, pState.integrity + 3);
-      context.triggerDataToast("GRAVITY STABILIZER: +100 DATA & IMPACT SHIELD!", pState.pos, 'var(--glow-orange)');
+      context.triggerDataToast("GRAVITY STABILIZER: +100 DATA", pState.pos, 'var(--glow-orange)');
       break;
 
     case ModuleId.BLACK_BOX:
