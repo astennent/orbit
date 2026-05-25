@@ -1,5 +1,5 @@
 import React from 'react'
-import { Planet, Probe } from '../types'
+import { Planet, Probe } from '../../types'
 
 interface TelemetryPanelProps {
   statusLabel: string

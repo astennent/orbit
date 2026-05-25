@@ -1,5 +1,5 @@
 import React from 'react'
-import { UpgradeEntry } from '../types'
+import { UpgradeEntry } from '../../types'
 import { ModuleCartridge } from './ModuleCartridge'
 
 interface BuildSpecsPanelProps {

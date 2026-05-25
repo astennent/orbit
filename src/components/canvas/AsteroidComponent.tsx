@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
-import { Asteroid } from '../types'
+import { Asteroid } from '../../types'
 
 interface AsteroidComponentProps {
   asteroid: Asteroid

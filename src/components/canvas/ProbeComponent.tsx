@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
-import { Probe, Planet } from '../types'
+import { Probe, Planet } from '../../types'
 
 interface ProbeComponentProps {
   probe: Probe

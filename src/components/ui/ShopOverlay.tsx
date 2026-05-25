@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { UpgradeId, UpgradeEntry, HackId } from '../types';
-import { UPGRADE_REGISTRY, MODULES_REGISTRY } from '../constants/upgrades';
+import { UpgradeId, UpgradeEntry, HackId } from '../../types';
+import { UPGRADE_REGISTRY, MODULES_REGISTRY } from '../../constants/upgrades';
 import { ModuleCartridge } from './ModuleCartridge';
 import './ShopOverlay.css';
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { GameLoopState, GameStatus } from '../types';
+import { GameLoopState, GameStatus } from '../../types';
 import './HUD.css';
 
 interface HUDProps {

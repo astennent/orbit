@@ -1,13 +1,13 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
-import { Planet } from '../types'
+import { Planet } from '../../types'
 import {
   GRAVITATIONAL_CONSTANT,
   ATMOSPHERE_DRAG,
   PHYSICS_DT,
   MIN_SPEED_THRESHOLD,
   MAX_TRAJECTORY_STEPS
-} from '../constants'
+} from '../../constants'
 
 interface TrajectoryLineProps {
   startPos: THREE.Vector3

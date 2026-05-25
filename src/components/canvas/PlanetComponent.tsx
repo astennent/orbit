@@ -2,7 +2,7 @@ import { useRef, useState, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
-import { Planet } from '../types'
+import { Planet } from '../../types'
 
 interface PlanetComponentProps {
   planet: Planet

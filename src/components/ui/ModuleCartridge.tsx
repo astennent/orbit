@@ -1,6 +1,6 @@
 import React from 'react';
-import { UpgradeEntry, UpgradeId } from '../types';
-import { UPGRADE_REGISTRY } from '../constants/upgrades';
+import { UpgradeEntry, UpgradeId } from '../../types';
+import { UPGRADE_REGISTRY } from '../../constants/upgrades';
 
 interface ModuleCartridgeProps {
   mod: UpgradeEntry | null;

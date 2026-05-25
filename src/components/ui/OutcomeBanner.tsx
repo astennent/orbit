@@ -1,6 +1,6 @@
 import React from 'react'
-import { GameState, UpgradeId } from '../types'
-import { getBannerMessage } from '../utils/statusFormatters'
+import { GameState, UpgradeId } from '../../types'
+import { getBannerMessage } from '../../utils/statusFormatters'
 
 interface OutcomeBannerProps {
   gameState: GameState
