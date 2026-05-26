@@ -495,6 +495,7 @@ export function usePhysicsLoop({
               triggerDataToast(`SLOTS FULL! +100 DATA`, ast.pos, '#ffd700')
             }
           }
+          return { ...ast, health: 0 }
         }
         return ast
       })
