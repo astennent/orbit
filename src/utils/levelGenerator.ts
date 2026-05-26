@@ -28,97 +28,61 @@ const NEON_COLORS = [
 export function generatePlanets(level: number): Planet[] {
   const launchPad = new THREE.Vector3(LAUNCH_PAD_X, 0, LAUNCH_PAD_Z);
   const planets: Planet[] = [];
+  const suffixes = ['A', 'B', 'C'];
 
-  // Planet 1: Primary attractor
-  const p1Radius = 1.8 + Math.floor(level / 5) * 0.15;
-  const clampedRadius1 = Math.min(2.8, p1Radius);
-  const name1 = `${PLANET_NAMES[(level - 1) % PLANET_NAMES.length]}-${level}A`;
-  const color1 = NEON_COLORS[(level - 1) % NEON_COLORS.length];
-  const mass1 = 45 + (level * 1.5) + Math.random() * 10;
+  for (let i = 0; i < 3; i++) {
+    const suffix = suffixes[i];
+    const planetId = `core-planet-${level}-${suffix.toLowerCase()}`;
 
-  let pos1 = new THREE.Vector3();
-  let attempts = 0;
-  while (attempts < 150) {
-    const angle = Math.random() * Math.PI * 2;
-    const distance = MIN_PLANET_DISTANCE + Math.random() * (MAX_PLANET_DISTANCE - MIN_PLANET_DISTANCE);
-    pos1.set(Math.cos(angle) * distance, 0, Math.sin(angle) * distance);
-    if (pos1.distanceTo(launchPad) >= 7.0) break;
-    attempts++;
+    const clampedRadius = 1.2 + Math.random() * 1.6;
+    const mass = clampedRadius * 20 + Math.random() * 15;
+
+    const nameIndex = level - 1 + i;
+    const colorIndex = level - 1 + i;
+
+    const positiveNameIdx = ((nameIndex % PLANET_NAMES.length) + PLANET_NAMES.length) % PLANET_NAMES.length;
+    const positiveColorIdx = ((colorIndex % NEON_COLORS.length) + NEON_COLORS.length) % NEON_COLORS.length;
+
+    const name = `${PLANET_NAMES[positiveNameIdx]}-${level}${suffix}`;
+    const color = NEON_COLORS[positiveColorIdx];
+
+    let pos = new THREE.Vector3();
+    let attempts = 0;
+    const maxAttempts = 150 + i * 50;
+
+    while (attempts < maxAttempts) {
+      const angle = Math.random() * Math.PI * 2;
+      const distance = MIN_PLANET_DISTANCE + Math.random() * (MAX_PLANET_DISTANCE - MIN_PLANET_DISTANCE);
+      pos.set(Math.cos(angle) * distance, 0, Math.sin(angle) * distance);
+
+      // Safe distance check from launchpad and all previously generated planets
+      let safe = pos.distanceTo(launchPad) >= 7.0;
+      for (const p of planets) {
+        if (pos.distanceTo(p.pos) < 8.0) {
+          safe = false;
+          break;
+        }
+      }
+
+      if (safe) break;
+      attempts++;
+    }
+
+    // level > 1 prevents gas giants on first level.
+    // i > 0 means at least one planet is rocky.
+    const isGasGiant = level > 1 && i > 0 && Math.random() < 0.25;
+
+    planets.push({
+      id: planetId,
+      name: isGasGiant ? `${name} (Gas Giant)` : name,
+      pos: pos.clone(),
+      radius: clampedRadius,
+      mass: mass,
+      color: color,
+      atmosphereRadius: clampedRadius * 2.5,
+      isGasGiant: isGasGiant
+    });
   }
-
-  const isGasGiant1 = level > 1 && Math.random() < 0.25;
-  planets.push({
-    id: `core-planet-${level}-a`,
-    name: isGasGiant1 ? `${name1} (Gas Giant)` : name1,
-    pos: pos1.clone(),
-    radius: clampedRadius1,
-    mass: Math.min(75, mass1),
-    color: color1,
-    atmosphereRadius: clampedRadius1 * 2.5,
-    isGasGiant: isGasGiant1
-  });
-
-  // Planet 2: Secondary attractor (always spawned!)
-  const p2Radius = 1.5 + Math.floor(level / 6) * 0.12;
-  const clampedRadius2 = Math.min(2.4, p2Radius);
-  const name2 = `${PLANET_NAMES[level % PLANET_NAMES.length]}-${level}B`;
-  const color2 = NEON_COLORS[level % NEON_COLORS.length];
-  const mass2 = 35 + (level * 1.2) + Math.random() * 8;
-
-  let pos2 = new THREE.Vector3();
-  attempts = 0;
-  while (attempts < 200) {
-    const angle = Math.random() * Math.PI * 2;
-    const distance = MIN_PLANET_DISTANCE + Math.random() * (MAX_PLANET_DISTANCE - MIN_PLANET_DISTANCE);
-    pos2.set(Math.cos(angle) * distance, 0, Math.sin(angle) * distance);
-
-    // Safety check: must be away from launchpad and at least 8.0 units away from Planet 1
-    if (pos2.distanceTo(launchPad) >= 7.0 && pos2.distanceTo(pos1) >= 8.0) break;
-    attempts++;
-  }
-
-  const isGasGiant2 = level > 2 && Math.random() < 0.25;
-  planets.push({
-    id: `core-planet-${level}-b`,
-    name: isGasGiant2 ? `${name2} (Gas Giant)` : name2,
-    pos: pos2.clone(),
-    radius: clampedRadius2,
-    mass: Math.min(60, mass2),
-    color: color2,
-    atmosphereRadius: clampedRadius2 * 2.5,
-    isGasGiant: isGasGiant2
-  });
-
-  // Planet 3: Tertiary attractor (always spawned!)
-  const p3Radius = 1.2 + Math.floor(level / 7) * 0.10;
-  const clampedRadius3 = Math.min(2.0, p3Radius);
-  const name3 = `${PLANET_NAMES[(level + 1) % PLANET_NAMES.length]}-${level}C`;
-  const color3 = NEON_COLORS[(level + 1) % NEON_COLORS.length];
-  const mass3 = 25 + (level * 1.0) + Math.random() * 6;
-
-  let pos3 = new THREE.Vector3();
-  attempts = 0;
-  while (attempts < 250) {
-    const angle = Math.random() * Math.PI * 2;
-    const distance = MIN_PLANET_DISTANCE + Math.random() * (MAX_PLANET_DISTANCE - MIN_PLANET_DISTANCE);
-    pos3.set(Math.cos(angle) * distance, 0, Math.sin(angle) * distance);
-
-    // Safety check: must be away from launchpad and at least 8.0 units away from Planet 1 & 2
-    if (pos3.distanceTo(launchPad) >= 7.0 && pos3.distanceTo(pos1) >= 8.0 && pos3.distanceTo(pos2) >= 8.0) break;
-    attempts++;
-  }
-
-  const isGasGiant3 = level > 3 && Math.random() < 0.25;
-  planets.push({
-    id: `core-planet-${level}-c`,
-    name: isGasGiant3 ? `${name3} (Gas Giant)` : name3,
-    pos: pos3.clone(),
-    radius: clampedRadius3,
-    mass: Math.min(45, mass3),
-    color: color3,
-    atmosphereRadius: clampedRadius3 * 2.5,
-    isGasGiant: isGasGiant3
-  });
 
   return planets;
 }
