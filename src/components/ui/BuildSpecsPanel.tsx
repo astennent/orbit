@@ -148,7 +148,15 @@ export const BuildSpecsPanel: React.FC<BuildSpecsPanelProps> = ({
             HACKS & PASSIVE ENHANCEMENTS
           </div>
           {activeHacks.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px' }}>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              fontSize: '11px',
+              maxHeight: '140px',
+              overflowY: 'auto',
+              paddingRight: '6px'
+            }}>
               {activeHacks.map((hack) => {
                 return (
                   <div key={hack.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 8px', background: 'rgba(255,255,255,0.02)', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.04)' }}>

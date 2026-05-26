@@ -446,46 +446,10 @@ export default function App() {
         onResetProbe={handleResetLevel}
       />
 
-      {/* Header Banner Overlay */}
-      <div style={{
-        position: 'absolute',
-        top: '20px',
-        left: '20px',
-        right: '20px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        pointerEvents: 'none',
-        zIndex: 100
-      }}>
-        <div className="panel" style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: '20px', pointerEvents: 'auto' }}>
-          <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 900 }} className="text-cyan">
-            ORBIT HARVEST
-          </h1>
-          <span className="font-orbitron text-gold" style={{ fontSize: '16px', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: '15px' }}>
-            SECTOR {level}
-          </span>
-          <span className="font-script text-cyan" style={{ fontSize: '18px', borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: '15px' }}>
-            Retro-Future Rocketry Console
-          </span>
-        </div>
-
-        <div className="panel" style={{ padding: '8px 24px', display: 'flex', gap: '15px', pointerEvents: 'auto' }}>
-          {(import.meta as any).env.DEV && (
-            <button className="btn-arcade success" style={{ fontSize: '11px', padding: '6px 16px' }} onClick={handleDevAdvance}>
-              DEV ADVANCE (+3)
-            </button>
-          )}
-          <button className="btn-arcade danger" style={{ fontSize: '11px', padding: '6px 16px' }} onClick={handleResetYieldVault}>
-            RESET VAULT
-          </button>
-        </div>
-      </div>
-
       {/* Left Column: Telemetry Panels */}
       <div style={{
         position: 'absolute',
-        top: '100px',
+        top: '20px',
         left: '20px',
         width: '300px',
         display: 'flex',
@@ -494,6 +458,7 @@ export default function App() {
         zIndex: 90
       }}>
         <TelemetryPanel
+          level={level}
           statusLabel={statusObj.label}
           statusCss={statusObj.css}
           currentSpeed={currentSpeed}
@@ -507,7 +472,7 @@ export default function App() {
       {/* Right Column: Build Specs & Objectives Panels */}
       <div style={{
         position: 'absolute',
-        top: '100px',
+        top: '20px',
         right: '20px',
         width: '320px',
         display: 'flex',
@@ -527,6 +492,33 @@ export default function App() {
           activeBeaconsCount={beacons.filter(d => !d.collected).length}
           activeThreatsCount={asteroids.filter(a => a.health > 0).length}
         />
+      </div>
+
+      {/* Bottom Left Debug Controls */}
+      <div style={{
+        position: 'absolute',
+        bottom: '20px',
+        left: '20px',
+        display: 'flex',
+        gap: '8px',
+        zIndex: 100
+      }}>
+        {(import.meta as any).env.DEV && (
+          <button 
+            className="btn-arcade success" 
+            style={{ fontSize: '8px', padding: '4px 8px', borderRadius: '4px', minWidth: 'auto', letterSpacing: '0.5px' }} 
+            onClick={handleDevAdvance}
+          >
+            DEV ADVANCE
+          </button>
+        )}
+        <button 
+          className="btn-arcade danger" 
+          style={{ fontSize: '8px', padding: '4px 8px', borderRadius: '4px', minWidth: 'auto', letterSpacing: '0.5px' }} 
+          onClick={handleResetYieldVault}
+        >
+          RESET VAULT
+        </button>
       </div>
 
       {/* Bottom HUD: Data progress and control tray */}

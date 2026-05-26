@@ -127,6 +127,21 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
               }
             }
           }}
+          style={{
+            width: 'calc((100% - 30px) / 6)',
+            aspectRatio: '1',
+            background: 'rgba(0,0,0,0.3)',
+            border: '2px dashed rgba(255, 255, 255, 0.12)',
+            borderRadius: '6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '14px',
+            color: 'rgba(255,255,255,0.15)',
+            boxShadow: 'inset 0 0 8px rgba(0,0,0,0.6)',
+            boxSizing: 'border-box',
+            flexShrink: 0
+          }}
         >
           —
         </div>
@@ -155,7 +170,7 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
           }
         }}
         style={{
-          flex: '1 1 0px',
+          width: 'calc((100% - 30px) / 6)',
           aspectRatio: '1',
           background: pulseState ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.55)',
           border: pulseState
@@ -177,7 +192,9 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
           transition: 'all 0.08s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
           cursor: 'grab',
           position: 'relative',
-          zIndex: pulseState ? 10 : 1
+          zIndex: pulseState ? 10 : 1,
+          boxSizing: 'border-box',
+          flexShrink: 0
         }}
       >
         {mod.image ? (

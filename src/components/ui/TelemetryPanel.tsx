@@ -2,6 +2,7 @@ import React from 'react'
 import { Planet, Probe } from '../../types'
 
 interface TelemetryPanelProps {
+  level: number
   statusLabel: string
   statusCss: string
   currentSpeed: number
@@ -12,6 +13,7 @@ interface TelemetryPanelProps {
 }
 
 export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({
+  level,
   statusLabel,
   statusCss,
   currentSpeed,
@@ -22,9 +24,22 @@ export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({
 }) => {
   return (
     <div className="panel">
-      <h2 style={{ margin: '0 0 15px 0', fontSize: '14px', borderBottom: '1px solid rgba(0,229,255,0.2)', paddingBottom: '8px' }}>
-        Flight Telemetry
-        <div className="font-script text-cyan" style={{ fontSize: '14px', marginTop: '2px', textTransform: 'none', fontWeight: 'normal' }}>Live rocket telemetry</div>
+      <h2 style={{ 
+        margin: '0 0 15px 0', 
+        fontSize: '14px', 
+        borderBottom: '1px solid rgba(0,229,255,0.2)', 
+        paddingBottom: '8px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'baseline'
+      }}>
+        <div>
+          Flight Telemetry
+          <div className="font-script text-cyan" style={{ fontSize: '14px', marginTop: '2px', textTransform: 'none', fontWeight: 'normal' }}>Live rocket telemetry</div>
+        </div>
+        <div className="font-orbitron text-gold" style={{ fontSize: '15px', fontWeight: 'bold' }}>
+          SECTOR {level}
+        </div>
       </h2>
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '12px' }}>
