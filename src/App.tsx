@@ -7,13 +7,12 @@ import { ShopOverlay } from './components/ui/ShopOverlay'
 import { HackSelectionOverlay } from './components/ui/HackSelectionOverlay'
 import { TelemetryPanel } from './components/ui/TelemetryPanel'
 import { BuildSpecsPanel } from './components/ui/BuildSpecsPanel'
-import { ObjectivesPanel } from './components/ui/ObjectivesPanel'
 import { LaunchControlPanel } from './components/ui/LaunchControlPanel'
 import { OutcomeBanner } from './components/ui/OutcomeBanner'
 import { usePhysicsLoop } from './hooks/usePhysicsLoop'
 import { useSlingshotControls } from './hooks/useSlingshotControls'
 import { getStatusDisplay } from './utils/statusFormatters'
-import { GRAVITATIONAL_CONSTANT, getSectorQuota } from './constants'
+import { getSectorQuota } from './constants'
 import { createFreshProbe } from './utils/probeUtils'
 import { UPGRADE_REGISTRY, UPGRADE_MAPPING } from './constants/upgrades'
 
@@ -440,15 +439,17 @@ export default function App() {
       )}
 
       {/* Center Top Context Controller Button & Status Banner */}
-      <OutcomeBanner
-        gameState={gameState}
-        probeData={probe.data}
-        sectorQuota={sectorQuota}
-        showSelfDestruct={showSelfDestruct}
-        onSelfDestruct={handleSelfDestruct}
-        onNextSector={handleNextLevel}
-        onResetProbe={handleResetLevel}
-      />
+      {!isShopOpen && !isHackStoreOpen && (
+        <OutcomeBanner
+          gameState={gameState}
+          probeData={probe.data}
+          sectorQuota={sectorQuota}
+          showSelfDestruct={showSelfDestruct}
+          onSelfDestruct={handleSelfDestruct}
+          onNextSector={handleNextLevel}
+          onResetProbe={handleResetLevel}
+        />
+      )}
 
       {/* Left Column: Telemetry Panels */}
       <div style={{
@@ -467,21 +468,21 @@ export default function App() {
           statusCss={statusObj.css}
           currentSpeed={currentSpeed}
           distanceToPlanetSurface={distanceToPlanetSurface}
-          planets={planets}
           probe={probe}
-          gravitationalConstant={GRAVITATIONAL_CONSTANT}
+          activeBeaconsCount={beacons.filter(d => !d.collected).length}
+          activeThreatsCount={asteroids.filter(a => a.health > 0).length}
         />
       </div>
 
-      {/* Right Column: Build Specs & Objectives Panels */}
+      {/* Right Column: Build Specs Panel */}
       <div style={{
         position: 'absolute',
         top: '20px',
         right: '20px',
+        bottom: '20px',
         width: '320px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '20px',
         zIndex: 90
       }}>
         <BuildSpecsPanel
@@ -489,12 +490,6 @@ export default function App() {
           activeModules={activeModules}
           activeHacks={activeHacks}
           onRearrange={handleRearrangeModules}
-        />
-
-        <ObjectivesPanel
-          harvestQuota={sectorQuota}
-          activeBeaconsCount={beacons.filter(d => !d.collected).length}
-          activeThreatsCount={asteroids.filter(a => a.health > 0).length}
         />
       </div>
 

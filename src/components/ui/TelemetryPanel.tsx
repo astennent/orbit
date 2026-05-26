@@ -1,5 +1,5 @@
 import React from 'react'
-import { Planet, Probe } from '../../types'
+import { Probe } from '../../types'
 
 interface TelemetryPanelProps {
   level: number
@@ -7,9 +7,9 @@ interface TelemetryPanelProps {
   statusCss: string
   currentSpeed: number
   distanceToPlanetSurface: string
-  planets: Planet[]
   probe: Probe
-  gravitationalConstant: number
+  activeBeaconsCount: number
+  activeThreatsCount: number
 }
 
 export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({
@@ -18,9 +18,9 @@ export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({
   statusCss,
   currentSpeed,
   distanceToPlanetSurface,
-  planets,
   probe,
-  gravitationalConstant
+  activeBeaconsCount,
+  activeThreatsCount
 }) => {
   return (
     <div className="panel">
@@ -94,17 +94,19 @@ export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({
         </div>
 
         <div>
-          <div style={{ color: 'var(--chrome-dim)' }}>SECTOR GRAVITY WELLS:</div>
-          <div style={{ marginTop: '3.5px', fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {planets.map(p => (
-              <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>{p.name}:</span>
-                <span>MASS: <strong className="text-cyan font-orbitron">{p.mass.toFixed(0)}</strong></span>
-              </div>
-            ))}
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '4px', marginTop: '2px' }}>
-              <span>CONSTANT G:</span>
-              <span className="text-cyan font-orbitron">{gravitationalConstant}</span>
+          <div style={{ color: 'var(--chrome-dim)', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '9px', fontWeight: 'bold', marginBottom: '5px' }}>
+            SECTOR OBJECTIVES:
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '11px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>ACTIVE BEACONS REMAINING:</span>
+              <span className="text-cyan font-orbitron">{activeBeaconsCount}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>ACTIVE HAZARDS (ASTEROIDS):</span>
+              <span className="font-orbitron" style={{ color: 'var(--glow-red)', fontWeight: 'bold' }}>
+                {activeThreatsCount}
+              </span>
             </div>
           </div>
         </div>

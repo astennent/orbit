@@ -68,13 +68,13 @@ export const BuildSpecsPanel: React.FC<BuildSpecsPanelProps> = ({
   };
 
   return (
-    <div className="panel">
+    <div className="panel" style={{ height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
       <h2 style={{ margin: '0 0 12px 0', fontSize: '14px', borderBottom: '1px solid rgba(255,215,0,0.2)', paddingBottom: '8px' }}>
         Console build specs
         <div className="font-script text-gold" style={{ fontSize: '14px', marginTop: '2px', textTransform: 'none', fontWeight: 'normal' }}>Console modules & hacks</div>
       </h2>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', flex: 1, minHeight: 0 }}>
         {/* Data Cores progress bar (25 bars, each 4 bits = 100 total) */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--chrome-dim)', marginBottom: '4px' }}>
@@ -143,7 +143,7 @@ export const BuildSpecsPanel: React.FC<BuildSpecsPanelProps> = ({
         </div>
 
         {/* Active Hacks section */}
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
           <div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--chrome-dim)', fontWeight: 'bold', marginBottom: '6px' }}>
             HACKS & PASSIVE ENHANCEMENTS
           </div>
@@ -153,7 +153,7 @@ export const BuildSpecsPanel: React.FC<BuildSpecsPanelProps> = ({
               flexDirection: 'column',
               gap: '6px',
               fontSize: '11px',
-              maxHeight: '140px',
+              flex: 1,
               overflowY: 'auto',
               paddingRight: '6px'
             }}>
@@ -174,7 +174,20 @@ export const BuildSpecsPanel: React.FC<BuildSpecsPanelProps> = ({
               })}
             </div>
           ) : (
-            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', fontStyle: 'italic', textAlign: 'center', padding: '8px', background: 'rgba(0,0,0,0.15)', borderRadius: '4px', border: '1.5px dashed rgba(255,255,255,0.04)' }}>
+            <div style={{ 
+              fontSize: '10px', 
+              color: 'rgba(255,255,255,0.25)', 
+              fontStyle: 'italic', 
+              textAlign: 'center', 
+              padding: '12px', 
+              background: 'rgba(0,0,0,0.15)', 
+              borderRadius: '4px', 
+              border: '1.5px dashed rgba(255,255,255,0.04)',
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
               No passive hacks active. Purchase hacks in Space Bazaar.
             </div>
           )}
