@@ -148,4 +148,12 @@ export interface UpgradeEntry {
   image?: string;
 }
 
+export interface LogEntry {
+  id: string;
+  text: string;
+  color?: string;
+  timeStr: number;
+}
+
+
 

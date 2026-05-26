@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { Probe, Planet, ExitPortal, Beacon, Asteroid, DataToast, GameState, ModuleId, HackId, TriggerId } from '../types'
+import { Probe, Planet, ExitPortal, Beacon, Asteroid, DataToast, GameState, ModuleId, HackId, TriggerId, LogEntry } from '../types'
 import { UPGRADE_REGISTRY, MODULES_REGISTRY, HACKS_REGISTRY } from '../constants/upgrades'
 import { handleTrigger, executeModuleEffect } from '../utils/moduleEffects'
 import { createFreshProbe, applyDamage } from '../utils/probeUtils'
@@ -55,6 +55,7 @@ export function usePhysicsLoop({
   const [beacons, setBeacons] = useState<Beacon[]>(initialSector.beacons)
   const [asteroids, setAsteroids] = useState<Asteroid[]>(initialSector.asteroids)
   const [toasts, setToasts] = useState<DataToast[]>([])
+  const [logs, setLogs] = useState<LogEntry[]>([])
   const [showSelfDestruct, setShowSelfDestruct] = useState<boolean>(false)
 
   const probeRef = useRef<Probe>(createFreshProbe(aimStartPos))
@@ -67,6 +68,7 @@ export function usePhysicsLoop({
   // Timers for active timed hacks
   const oscillatorTimerRef = useRef(1.0)
   const metronomeTimerRef = useRef(3.0)
+  const flightTimeRef = useRef<number>(0)
 
   const triggerDataToast = (text: string, pos: THREE.Vector3, color?: string) => {
     const newToast: DataToast = {
@@ -76,6 +78,18 @@ export function usePhysicsLoop({
       color
     };
     setToasts(current => [...current, newToast]);
+
+    // Append to Ship's Log
+    setLogs(current => [
+      ...current,
+      {
+        id: `log-${Date.now()}-${Math.random()}`,
+        text,
+        color,
+        timeStr: flightTimeRef.current
+      }
+    ]);
+
     setTimeout(() => {
       setToasts(current => current.filter(t => t.id !== newToast.id));
     }, 1200);
@@ -145,6 +159,7 @@ export function usePhysicsLoop({
   useEffect(() => {
     if (gameState !== 'FLIGHT') return
 
+    flightTimeRef.current = 0
     wasInsideAtmosphereRef.current = false
     let animFrameId: number
 
@@ -155,6 +170,9 @@ export function usePhysicsLoop({
       pState.pos = pState.pos.clone()
       pState.vel = pState.vel.clone()
       pState.trail = [...pState.trail]
+
+      // Increment flight time since launch
+      flightTimeRef.current += PHYSICS_DT
 
       // 1. Gravity Integration
       const acc = new THREE.Vector3()
@@ -545,6 +563,8 @@ export function usePhysicsLoop({
     showSelfDestruct,
     setShowSelfDestruct,
     selfDestructTimeoutRef,
-    handleSelfDestruct
+    handleSelfDestruct,
+    logs,
+    setLogs
   }
 }

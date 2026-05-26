@@ -6,6 +6,7 @@ import { generatePlanets, generateExitPortal, generateBeacons, generateAsteroids
 import { ShopOverlay } from './components/ui/ShopOverlay'
 import { HackSelectionOverlay } from './components/ui/HackSelectionOverlay'
 import { TelemetryPanel } from './components/ui/TelemetryPanel'
+import { ShipsLogPanel } from './components/ui/ShipsLogPanel'
 import { BuildSpecsPanel } from './components/ui/BuildSpecsPanel'
 import { LaunchControlPanel } from './components/ui/LaunchControlPanel'
 import { OutcomeBanner } from './components/ui/OutcomeBanner'
@@ -151,7 +152,9 @@ export default function App() {
     showSelfDestruct,
     setShowSelfDestruct,
     selfDestructTimeoutRef,
-    handleSelfDestruct
+    handleSelfDestruct,
+    logs,
+    setLogs
   } = usePhysicsLoop({
     gameState,
     setGameState,
@@ -226,6 +229,7 @@ export default function App() {
       selfDestructTimeoutRef.current = null
     }
     setShowSelfDestruct(false)
+    setLogs([])
   }
 
   // Handle Next Sector button trigger
@@ -326,6 +330,7 @@ export default function App() {
       selfDestructTimeoutRef.current = null
     }
     setShowSelfDestruct(false)
+    setLogs([])
   }
 
   // Entirely resets Data Cores vault and starts fresh from Level 1
@@ -369,6 +374,7 @@ export default function App() {
       selfDestructTimeoutRef.current = null
     }
     setShowSelfDestruct(false)
+    setLogs([])
   }
 
   // Dev-only handler to cheat/advance sector with +3 Data Cores
@@ -472,6 +478,7 @@ export default function App() {
           activeBeaconsCount={beacons.filter(d => !d.collected).length}
           activeThreatsCount={asteroids.filter(a => a.health > 0).length}
         />
+        <ShipsLogPanel logs={logs} />
       </div>
 
       {/* Right Column: Build Specs Panel */}
