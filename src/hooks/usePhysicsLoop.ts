@@ -10,7 +10,6 @@ import {
   PHYSICS_DT,
   MIN_SPEED_THRESHOLD,
   GAS_GIANT_MIN_SPEED_THRESHOLD,
-  SECTOR_QUOTA,
   OUT_OF_BOUNDS_LIMIT
 } from '../constants'
 
@@ -33,6 +32,7 @@ interface UsePhysicsLoopProps {
   activeHacksRef: React.MutableRefObject<HackId[]>
   setModuleSlots: React.Dispatch<React.SetStateAction<(ModuleId | null)[]>>
   setHackSlots: React.Dispatch<React.SetStateAction<HackId[]>>
+  sectorQuota: number
 }
 
 export function usePhysicsLoop({
@@ -47,7 +47,8 @@ export function usePhysicsLoop({
   activeModulesRef,
   activeHacksRef,
   setModuleSlots,
-  setHackSlots
+  setHackSlots,
+  sectorQuota
 }: UsePhysicsLoopProps) {
   const [probe, setProbe] = useState<Probe>(() => createFreshProbe(aimStartPos))
 
@@ -93,13 +94,13 @@ export function usePhysicsLoop({
     }
     setShowSelfDestruct(false)
 
-    const isWin = overrideSuccessState === 'PORTAL_EXIT' || pState.data >= SECTOR_QUOTA
+    const isWin = overrideSuccessState === 'PORTAL_EXIT' || pState.data >= sectorQuota
     const successState = overrideSuccessState || 'WIN'
 
     if (isWin) {
       gameStateRef.current = successState
       setGameState(successState)
-      const earnedDataCores = Math.floor(pState.data / SECTOR_QUOTA)
+      const earnedDataCores = Math.floor(pState.data / sectorQuota)
       console.log(`${contextName} Win! Data:`, pState.data, "Data Cores:", earnedDataCores)
       onSecureDataCores(earnedDataCores)
     } else {
@@ -261,7 +262,7 @@ export function usePhysicsLoop({
         dispatchTrigger(TriggerId.PROBE_DEATH, pState);
         probeRef.current = pState
         setProbe(pState)
-        if (pState.data < SECTOR_QUOTA) {
+        if (pState.data < sectorQuota) {
           triggerDataToast("OUT OF BOUNDS!", pState.pos, '#ff4757');
         }
         resolveFlightOutcome(pState, 'CRASHED', 'Out of Bounds')
@@ -481,10 +482,10 @@ export function usePhysicsLoop({
       const portalDiff = new THREE.Vector3().subVectors(portal.pos, pState.pos)
       portalDiff.y = 0
       if (portalDiff.length() < portal.radius + 0.35) {
-        pState.data += SECTOR_QUOTA
+        pState.data += sectorQuota
         probeRef.current = pState
         setProbe(pState)
-        triggerDataToast(`+${SECTOR_QUOTA} Portal Escape!`, portal.pos, '#ffd700')
+        triggerDataToast(`+${sectorQuota} Portal Escape!`, portal.pos, '#ffd700')
         resolveFlightOutcome(pState, 'CRASHED', 'Portal Escape', 'PORTAL_EXIT')
         return
       }

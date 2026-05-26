@@ -1,5 +1,4 @@
 import { GameState, UpgradeId } from '../types'
-import { SECTOR_QUOTA } from '../constants'
 
 // Format high-level simulation state for the telemetry spec overlay
 export const getStatusDisplay = (gameState: GameState) => {
@@ -22,9 +21,9 @@ export const getStatusDisplay = (gameState: GameState) => {
 }
 
 // Format glowing center-top success/momentum alerts
-export const getBannerMessage = (gameState: GameState, probeData: number, _purchasedUpgrades?: UpgradeId[]) => {
+export const getBannerMessage = (gameState: GameState, probeData: number, sectorQuota: number, _purchasedUpgrades?: UpgradeId[]) => {
   if (gameState === 'WIN' || gameState === 'PORTAL_EXIT') {
-    const totalSecured = Math.floor(probeData / SECTOR_QUOTA)
+    const totalSecured = Math.floor(probeData / sectorQuota)
     return {
       text: `SECURED THIS RUN: +${totalSecured} ${totalSecured === 1 ? 'DATA CORE' : 'DATA CORES'}!`,
       css: 'text-green',

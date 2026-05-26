@@ -13,7 +13,7 @@ import { OutcomeBanner } from './components/ui/OutcomeBanner'
 import { usePhysicsLoop } from './hooks/usePhysicsLoop'
 import { useSlingshotControls } from './hooks/useSlingshotControls'
 import { getStatusDisplay } from './utils/statusFormatters'
-import { GRAVITATIONAL_CONSTANT, SECTOR_QUOTA } from './constants'
+import { GRAVITATIONAL_CONSTANT, getSectorQuota } from './constants'
 import { createFreshProbe } from './utils/probeUtils'
 import { UPGRADE_REGISTRY, UPGRADE_MAPPING } from './constants/upgrades'
 
@@ -68,6 +68,8 @@ export default function App() {
       return 1
     }
   })
+
+  const sectorQuota = getSectorQuota(level)
 
   const aimStartPos = useRef(new THREE.Vector3(-12, 0, 5)).current
 
@@ -165,7 +167,8 @@ export default function App() {
     activeModulesRef,
     activeHacksRef,
     setModuleSlots,
-    setHackSlots
+    setHackSlots,
+    sectorQuota
   })
 
   // --- Aiming Slingshot Interactivity Hook Integration ---
@@ -440,6 +443,7 @@ export default function App() {
       <OutcomeBanner
         gameState={gameState}
         probeData={probe.data}
+        sectorQuota={sectorQuota}
         showSelfDestruct={showSelfDestruct}
         onSelfDestruct={handleSelfDestruct}
         onNextSector={handleNextLevel}
@@ -488,7 +492,7 @@ export default function App() {
         />
 
         <ObjectivesPanel
-          harvestQuota={SECTOR_QUOTA}
+          harvestQuota={sectorQuota}
           activeBeaconsCount={beacons.filter(d => !d.collected).length}
           activeThreatsCount={asteroids.filter(a => a.health > 0).length}
         />
@@ -524,7 +528,7 @@ export default function App() {
       {/* Bottom HUD: Data progress and control tray */}
       <LaunchControlPanel
         probeData={probe.data}
-        sectorQuota={SECTOR_QUOTA}
+        sectorQuota={sectorQuota}
       />
     </div>
   )

@@ -5,6 +5,7 @@ import { getBannerMessage } from '../../utils/statusFormatters'
 interface OutcomeBannerProps {
   gameState: GameState
   probeData: number
+  sectorQuota: number
   showSelfDestruct: boolean
   onSelfDestruct: () => void
   onNextSector: () => void
@@ -14,6 +15,7 @@ interface OutcomeBannerProps {
 export const OutcomeBanner: React.FC<OutcomeBannerProps> = ({
   gameState,
   probeData,
+  sectorQuota,
   showSelfDestruct,
   onSelfDestruct,
   onNextSector,
@@ -26,7 +28,7 @@ export const OutcomeBanner: React.FC<OutcomeBannerProps> = ({
     return null
   }
 
-  const bannerMsg = getBannerMessage(gameState, probeData)
+  const bannerMsg = getBannerMessage(gameState, probeData, sectorQuota)
 
   return (
     <div style={{

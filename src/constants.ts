@@ -5,7 +5,9 @@ export const ATMOSPHERE_DRAG = 0.45; // Friction coefficient inside atmosphere
 export const MIN_SPEED_THRESHOLD = 0.06; // Below this speed, probe comes to a halt
 export const GAS_GIANT_MIN_SPEED_THRESHOLD = 2; // Below this speed inside a gas giant, probe comes to a halt
 
-export const SECTOR_QUOTA = 100; // Target data points to win
+export const getSectorQuota = (level: number): number => {
+  return Math.floor(100 * Math.pow(1.1, level - 1));
+};
 
 export const MAX_TRAJECTORY_STEPS = 250; // Steps to predict trajectory path
 
