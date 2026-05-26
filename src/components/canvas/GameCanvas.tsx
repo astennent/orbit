@@ -353,7 +353,7 @@ export function GameCanvas({
               <mesh>
                 <sphereGeometry args={[b.radius * 0.95, 32, 32]} />
                 <meshStandardMaterial
-                  color={isHighValue ? "#ffd700" : "#a0d8ef"}
+                  color={isHighValue ? "#2ed573" : "#a0d8ef"}
                   transparent
                   opacity={isHighValue ? 0.32 : 0.22}
                   roughness={0.02}
@@ -365,10 +365,10 @@ export function GameCanvas({
               <mesh>
                 <sphereGeometry args={[b.radius * 0.42, 32, 32]} />
                 <meshStandardMaterial
-                  color={isHighValue ? "#ffaa00" : "#00ffcc"}
+                  color={isHighValue ? "#00ff66" : "#00ffcc"}
                   roughness={0.05}
                   metalness={0.95}
-                  emissive={isHighValue ? "#ff5500" : "#00aaff"}
+                  emissive={isHighValue ? "#00ff20" : "#00aaff"}
                   emissiveIntensity={isHighValue ? 0.65 : 0.45}
                 />
               </mesh>
@@ -376,7 +376,7 @@ export function GameCanvas({
               <mesh rotation={[-Math.PI / 2, 0, 0]}>
                 <ringGeometry args={[b.radius * 0.9, b.radius * 0.98, 32]} />
                 <meshStandardMaterial
-                  color={isHighValue ? "#ffd700" : "#e0e0e0"}
+                  color={isHighValue ? "#2ed573" : "#e0e0e0"}
                   roughness={0.05}
                   metalness={0.95}
                   side={THREE.DoubleSide}

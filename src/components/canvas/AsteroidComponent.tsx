@@ -24,23 +24,23 @@ export function AsteroidComponent({ asteroid }: AsteroidComponentProps) {
     switch (asteroid.type) {
       case 'ice':
         return {
-          color: '#00f5ff',
-          roughness: 0.1,
-          metalness: 0.2,
-          emissive: '#0099ff',
-          emissiveIntensity: 0.7,
+          color: '#ffd32a', // Crystalline Yellow
+          roughness: 0.15,
+          metalness: 0.1,
+          emissive: '#ffb300', // Yellow/Gold glow
+          emissiveIntensity: 0.65,
           transparent: true,
-          opacity: 0.8,
+          opacity: 0.75,
           label: 'Ice Asteroid',
           desc: 'Brittle crystalline ice. High hack/module drop rate but extremely cold. Yields 10-30 data.'
         }
       case 'carbon':
         return {
-          color: '#5c483f',
-          roughness: 0.9,
+          color: '#ffa500', // Deep Orange
+          roughness: 0.85,
           metalness: 0.1,
           emissive: '#ff5500', // Molten orange lava glow
-          emissiveIntensity: 0.45,
+          emissiveIntensity: 0.5,
           transparent: false,
           opacity: 1.0,
           label: 'Carbon Asteroid',
@@ -48,11 +48,11 @@ export function AsteroidComponent({ asteroid }: AsteroidComponentProps) {
         }
       case 'metallic':
         return {
-          color: '#ffd700', // Rich gold
-          roughness: 0.2,
+          color: '#ff4d4d', // Industrial Red
+          roughness: 0.25,
           metalness: 0.95,
-          emissive: '#ffaa00', // Energetic golden glow
-          emissiveIntensity: 0.65,
+          emissive: '#ff002b', // Energetic volcanic red glow
+          emissiveIntensity: 0.75,
           transparent: false,
           opacity: 1.0,
           label: 'Metallic Asteroid',

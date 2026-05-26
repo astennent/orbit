@@ -403,7 +403,7 @@ export function usePhysicsLoop({
           const addedData = dp.value;
           pState.data += addedData;
           const isHighValue = dp.value >= 25;
-          const color = isHighValue ? '#ffd700' : '#00ffcc';
+          const color = isHighValue ? '#00ff66' : '#00ffcc';
           triggerDataToast(`+${addedData.toFixed(0)} Data`, dp.pos, color);
 
           // Dispatch HIT_BEACON
@@ -464,7 +464,7 @@ export function usePhysicsLoop({
           const finalData = Math.round(baseDataRewards * dataMult)
           pState.data += finalData
 
-          const toastColor = ast.type === 'metallic' ? '#ffd700' : ast.type === 'ice' ? '#00ffcc' : '#ffffff'
+          const toastColor = ast.type === 'metallic' ? '#ff4757' : ast.type === 'ice' ? '#ffd32a' : '#ffa500'
           triggerDataToast(`+${finalData.toFixed(0)} Data`, ast.pos, toastColor)
 
           const hackChance = (ast.type === 'metallic' ? 0.10 : ast.type === 'carbon' ? 0.05 : 0.03) + (ast.size === 'large' ? 0.10 : ast.size === 'medium' ? 0.05 : 0.0)
