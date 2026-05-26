@@ -51,6 +51,8 @@ export interface Probe {
   magnetRadius: number;
   scoopActiveTimer?: number;
   scoopMultiplier?: number;
+  shieldLevel: number;
+  shieldDuration: number;
 }
 
 export interface Planet {

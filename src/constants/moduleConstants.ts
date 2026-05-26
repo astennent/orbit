@@ -3,14 +3,14 @@
 // --- Atmospheric Scoop ---
 export const ATMOSPHERIC_SCOOP_DURATION = 3.0;
 export const ATMOSPHERIC_SCOOP_MULTIPLIER = 10.0;
-export const ATMOSPHERIC_SCOOP_V2_DURATION = 6.0;
+export const ATMOSPHERIC_SCOOP_V2_DURATION = 3.0;
 export const ATMOSPHERIC_SCOOP_V2_MULTIPLIER = 25.0;
 
 // --- Ramjet ---
-export const RAMJET_SPEED_MULTIPLIER = 1.10;
-export const RAMJET_HULL_RESTORED = 1;
-export const RAMJET_V2_SPEED_MULTIPLIER = 1.25;
-export const RAMJET_V2_HULL_RESTORED = 3;
+export const RAMJET_SHIELD_ADD = 2;
+export const RAMJET_SHIELD_DURATION = 2.0;
+export const RAMJET_V2_SHIELD_ADD = 4;
+export const RAMJET_V2_SHIELD_DURATION = 3.0;
 
 // --- Gravity Stabilizer ---
 export const GRAVITY_STABILIZER_BONUS_DATA = 100;

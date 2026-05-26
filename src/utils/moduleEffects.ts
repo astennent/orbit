@@ -6,10 +6,10 @@ import {
   ATMOSPHERIC_SCOOP_MULTIPLIER,
   ATMOSPHERIC_SCOOP_V2_DURATION,
   ATMOSPHERIC_SCOOP_V2_MULTIPLIER,
-  RAMJET_SPEED_MULTIPLIER,
-  RAMJET_HULL_RESTORED,
-  RAMJET_V2_SPEED_MULTIPLIER,
-  RAMJET_V2_HULL_RESTORED,
+  RAMJET_SHIELD_ADD,
+  RAMJET_SHIELD_DURATION,
+  RAMJET_V2_SHIELD_ADD,
+  RAMJET_V2_SHIELD_DURATION,
   GRAVITY_STABILIZER_BONUS_DATA,
   GRAVITY_STABILIZER_V2_BONUS_DATA,
   BLACK_BOX_BONUS_DATA,
@@ -133,17 +133,17 @@ export function executeModuleEffect(moduleIndex: number, moduleId: ModuleId, pSt
       break;
 
     case ModuleId.RAMJET:
-      console.log(`Triggered RAMJET! Speed multiplier ${RAMJET_SPEED_MULTIPLIER}, +${RAMJET_HULL_RESTORED} hull integrity.`);
-      pState.vel.multiplyScalar(RAMJET_SPEED_MULTIPLIER);
-      pState.integrity = Math.min(pState.maxIntegrity, pState.integrity + RAMJET_HULL_RESTORED);
-      context.triggerDataToast(`RAMJET: SPEED UP & HULL RESTORED`, pState.pos, 'var(--glow-green)');
+      console.log(`Triggered RAMJET! +${RAMJET_SHIELD_ADD} shield level, +${RAMJET_SHIELD_DURATION}s shield duration.`);
+      pState.shieldLevel += RAMJET_SHIELD_ADD;
+      pState.shieldDuration += RAMJET_SHIELD_DURATION;
+      context.triggerDataToast(`RAMJET: SHIELD +${RAMJET_SHIELD_ADD} (${RAMJET_SHIELD_DURATION}s)`, pState.pos, 'var(--glow-green)');
       break;
 
     case ModuleId.RAMJET_V2:
-      console.log(`Triggered RAMJET V2! Speed multiplier ${RAMJET_V2_SPEED_MULTIPLIER}, +${RAMJET_V2_HULL_RESTORED} hull integrity.`);
-      pState.vel.multiplyScalar(RAMJET_V2_SPEED_MULTIPLIER);
-      pState.integrity = Math.min(pState.maxIntegrity, pState.integrity + RAMJET_V2_HULL_RESTORED);
-      context.triggerDataToast(`RAMJET V2: SPEED UP & HULL RESTORED`, pState.pos, 'var(--glow-green)');
+      console.log(`Triggered RAMJET V2! +${RAMJET_V2_SHIELD_ADD} shield level, +${RAMJET_V2_SHIELD_DURATION}s shield duration.`);
+      pState.shieldLevel += RAMJET_V2_SHIELD_ADD;
+      pState.shieldDuration += RAMJET_V2_SHIELD_DURATION;
+      context.triggerDataToast(`RAMJET V2: SHIELD +${RAMJET_V2_SHIELD_ADD} (${RAMJET_V2_SHIELD_DURATION}s)`, pState.pos, 'var(--glow-green)');
       break;
 
     case ModuleId.GRAVITY_STABILIZER:

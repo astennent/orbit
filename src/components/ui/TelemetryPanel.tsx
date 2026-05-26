@@ -94,6 +94,29 @@ export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({
         </div>
 
         <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--chrome-dim)', marginBottom: '3px' }}>
+            <span className="text-cyan" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}>
+              🛡️ PLASMA SHIELD:
+            </span>
+            <span className="text-cyan font-orbitron" style={{ fontWeight: 'bold' }}>
+              {(probe.shieldLevel || 0)} SP ({(probe.shieldDuration || 0).toFixed(1)}s)
+            </span>
+          </div>
+          <div className="progress-bar-container" style={{ height: '7px', background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(0,229,255,0.12)', borderRadius: '3px', padding: '1.5px', boxSizing: 'border-box' }}>
+            <div
+              style={{
+                height: '100%',
+                width: `${Math.min(100, (((probe.shieldLevel || 0) / (probe.maxIntegrity || 10)) * 100))}%`,
+                background: 'linear-gradient(90deg, #00e5ff, #0084ff)',
+                boxShadow: (probe.shieldLevel || 0) > 0 ? '0 0 8px rgba(0, 229, 255, 0.8)' : 'none',
+                borderRadius: '2px',
+                transition: 'width 0.1s linear'
+              }}
+            />
+          </div>
+        </div>
+
+        <div>
           <div style={{ color: 'var(--chrome-dim)', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '9px', fontWeight: 'bold', marginBottom: '5px' }}>
             SECTOR OBJECTIVES:
           </div>

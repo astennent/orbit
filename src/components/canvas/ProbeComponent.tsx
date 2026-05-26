@@ -112,6 +112,23 @@ export function ProbeComponent({ probe, gameState, planets }: ProbeComponentProp
           </mesh>
         )}
 
+        {/* Active Translucent Glowing Plasma Shield Bubble Mesh */}
+        {probe.shieldDuration > 0 && probe.shieldLevel > 0 && (
+          <mesh>
+            <sphereGeometry args={[0.55, 32, 32]} />
+            <meshStandardMaterial
+              color="#00e5ff"
+              transparent
+              opacity={0.35}
+              roughness={0.15}
+              metalness={0.1}
+              emissive="#00e5ff"
+              emissiveIntensity={1.8}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+        )}
+
         {/* Immersive 3D Tooltip Overlay */}
         {hovered && (
           <Html position={[0, 0.8, 0]} center style={{ pointerEvents: 'none' }}>
@@ -129,6 +146,11 @@ export function ProbeComponent({ probe, gameState, planets }: ProbeComponentProp
               <div><strong>Velocity:</strong> {(new THREE.Vector3(probe.vel.x, 0, probe.vel.z).length() * 10).toFixed(1)} km/s</div>
               <div><strong>Telemetry Data:</strong> {probe.data.toFixed(0)} Collected</div>
               <div><strong>Magnet Radius:</strong> {probe.magnetRadius.toFixed(1)} km</div>
+              {probe.shieldDuration > 0 && probe.shieldLevel > 0 && (
+                <div style={{ color: '#00e5ff', fontWeight: 'bold', marginTop: '2px' }}>
+                  <strong>Plasma Shield:</strong> {probe.shieldLevel} SP ({probe.shieldDuration.toFixed(1)}s)
+                </div>
+              )}
               
               {isInsideAtmosphere && (
                 <div style={{

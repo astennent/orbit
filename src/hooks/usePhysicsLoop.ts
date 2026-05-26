@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { Probe, Planet, ExitPortal, Beacon, Asteroid, DataToast, GameState, ModuleId, HackId, TriggerId } from '../types'
 import { UPGRADE_REGISTRY, MODULES_REGISTRY, HACKS_REGISTRY } from '../constants/upgrades'
 import { handleTrigger, executeModuleEffect } from '../utils/moduleEffects'
-import { createFreshProbe } from '../utils/probeUtils'
+import { createFreshProbe, applyDamage } from '../utils/probeUtils'
 import {
   GRAVITATIONAL_CONSTANT,
   ATMOSPHERE_DRAG,
@@ -189,8 +189,11 @@ export function usePhysicsLoop({
             const absorption = gsCount * GRAVITY_STABILIZER_SHIELD_ABSORPTION + gs2Count * GRAVITY_STABILIZER_V2_SHIELD_ABSORPTION
             const damage = Math.max(1, BASE_PLANET_DAMAGE - absorption)
 
-            pState.integrity = Math.max(0, pState.integrity - damage)
-            triggerDataToast(`-${damage} Hull`, pState.pos, '#ff4757')
+            const tookHpDamage = applyDamage(pState, damage, triggerDataToast);
+
+            if (!tookHpDamage) {
+              triggerDataToast(`Shield Absorbed Planet Bounce!`, pState.pos, '#00e5ff');
+            }
 
             if (pState.integrity <= 0) {
               hitPlanet = true
@@ -337,6 +340,15 @@ export function usePhysicsLoop({
         pState.scoopActiveTimer = Math.max(0, pState.scoopActiveTimer - PHYSICS_DT);
       }
 
+      // Decrement shield duration and check for expiration
+      if (pState.shieldDuration > 0) {
+        pState.shieldDuration = Math.max(0, pState.shieldDuration - PHYSICS_DT);
+        if (pState.shieldDuration === 0) {
+          pState.shieldLevel = 0;
+          triggerDataToast("SHIELD EXPIRED", pState.pos, '#ff4757');
+        }
+      }
+
       let timeRate = 1.5
       const sensorCount = activeHacksRef.current.filter(id => id === HackId.DEEP_SPACE_SENSOR).length;
       if (sensorCount > 0) {
@@ -413,8 +425,11 @@ export function usePhysicsLoop({
           const fraction = ast.health / 10
           const finalDamage = Math.ceil(baseDamage * sizeMult * fraction)
 
-          pState.integrity = Math.max(0, pState.integrity - finalDamage)
-          triggerDataToast(`-${finalDamage} Hull`, pState.pos, '#ff4757')
+          const tookHpDamage = applyDamage(pState, finalDamage, triggerDataToast);
+
+          if (!tookHpDamage) {
+            triggerDataToast(`Shield Absorbed Asteroid Impact!`, pState.pos, '#00e5ff')
+          }
 
           // Dispatch HIT_ASTEROID
           dispatchTrigger(TriggerId.HIT_ASTEROID, pState);
