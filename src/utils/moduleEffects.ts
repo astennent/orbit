@@ -14,10 +14,10 @@ import {
   GRAVITY_STABILIZER_V2_BONUS_DATA,
   BLACK_BOX_BONUS_DATA,
   BLACK_BOX_V2_BONUS_DATA,
-  WIND_SHIELD_HULL_RESTORED,
-  WIND_SHIELD_V2_HULL_RESTORED,
   MAGNETO_SCRAPPER_RANGE_ADD,
-  MAGNETO_SCRAPPER_V2_RANGE_ADD
+  MAGNETO_SCRAPPER_V2_RANGE_ADD,
+  BAROSPHERE_SIEVE_BONUS_DATA,
+  BAROSPHERE_SIEVE_V2_BONUS_DATA
 } from '../constants/moduleConstants';
 
 export interface TriggerContext {
@@ -170,16 +170,16 @@ export function executeModuleEffect(moduleIndex: number, moduleId: ModuleId, pSt
       context.triggerDataToast(`BLACK BOX V2: +${BLACK_BOX_V2_BONUS_DATA} DATA SECURED`, pState.pos, '#ff4757');
       break;
 
-    case ModuleId.WIND_SHIELD:
-      console.log(`Triggered WIND_SHIELD! Restoring ${WIND_SHIELD_HULL_RESTORED} hull integrity.`);
-      pState.integrity = Math.min(pState.maxIntegrity, pState.integrity + WIND_SHIELD_HULL_RESTORED);
-      context.triggerDataToast(`WIND SHIELD: +${WIND_SHIELD_HULL_RESTORED} HULL RESTORED`, pState.pos, '#2ed573');
+    case ModuleId.BAROSPHERE_SIEVE:
+      console.log(`Triggered BAROSPHERE_SIEVE! Collecting ${BAROSPHERE_SIEVE_BONUS_DATA} data.`);
+      pState.data += BAROSPHERE_SIEVE_BONUS_DATA;
+      context.triggerDataToast(`BAROSPHERE SIEVE: +${BAROSPHERE_SIEVE_BONUS_DATA} DATA`, pState.pos, '#2ed573');
       break;
 
-    case ModuleId.WIND_SHIELD_V2:
-      console.log(`Triggered WIND_SHIELD V2! Restoring ${WIND_SHIELD_V2_HULL_RESTORED} hull integrity.`);
-      pState.integrity = Math.min(pState.maxIntegrity, pState.integrity + WIND_SHIELD_V2_HULL_RESTORED);
-      context.triggerDataToast(`WIND SHIELD V2: +${WIND_SHIELD_V2_HULL_RESTORED} HULL RESTORED`, pState.pos, '#2ed573');
+    case ModuleId.BAROSPHERE_SIEVE_V2:
+      console.log(`Triggered BAROSPHERE_SIEVE_V2! Collecting ${BAROSPHERE_SIEVE_V2_BONUS_DATA} data.`);
+      pState.data += BAROSPHERE_SIEVE_V2_BONUS_DATA;
+      context.triggerDataToast(`BAROSPHERE SIEVE V2: +${BAROSPHERE_SIEVE_V2_BONUS_DATA} DATA`, pState.pos, '#2ed573');
       break;
 
     case ModuleId.MAGNETO_SCRAPPER:

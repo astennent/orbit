@@ -23,8 +23,13 @@ export const BLACK_BOX_BONUS_DATA = 300;
 export const BLACK_BOX_V2_BONUS_DATA = 750;
 
 // --- Wind Shield ---
-export const WIND_SHIELD_HULL_RESTORED = 10;
-export const WIND_SHIELD_V2_HULL_RESTORED = 25;
+export const WIND_SHIELD_1_STACK_MULTIPLIER = 0.02; // 98% reduction
+export const WIND_SHIELD_2_STACK_MULTIPLIER = -0.01; // 101% reduction (generates velocity boost!)
+export const BASE_GAS_GIANT_DRAG = 30.0;
+
+// --- Barosphere Sieve ---
+export const BAROSPHERE_SIEVE_BONUS_DATA = 500;
+export const BAROSPHERE_SIEVE_V2_BONUS_DATA = 1000;
 
 // --- Magneto Scrapper ---
 export const MAGNETO_SCRAPPER_RANGE_ADD = 0.2;

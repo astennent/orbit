@@ -19,10 +19,10 @@ import {
   GRAVITY_STABILIZER_V2_BONUS_DATA,
   BLACK_BOX_BONUS_DATA,
   BLACK_BOX_V2_BONUS_DATA,
-  WIND_SHIELD_HULL_RESTORED,
-  WIND_SHIELD_V2_HULL_RESTORED,
   MAGNETO_SCRAPPER_RANGE_ADD,
-  MAGNETO_SCRAPPER_V2_RANGE_ADD
+  MAGNETO_SCRAPPER_V2_RANGE_ADD,
+  BAROSPHERE_SIEVE_BONUS_DATA,
+  BAROSPHERE_SIEVE_V2_BONUS_DATA
 } from './moduleConstants'
 
 export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
@@ -74,16 +74,16 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
     triggerId: TriggerId.PROBE_DEATH_BY_COLLISION,
     image: blackBoxImg
   },
-  [ModuleId.WIND_SHIELD]: {
-    id: ModuleId.WIND_SHIELD,
-    name: 'Wind Shield',
-    short: 'WS',
+  [ModuleId.BAROSPHERE_SIEVE]: {
+    id: ModuleId.BAROSPHERE_SIEVE,
+    name: 'Barosphere Sieve',
+    short: 'BS',
     type: 'module',
     cost: 4,
     color: '#2ed573',
-    desc: `Restores ${WIND_SHIELD_HULL_RESTORED} hull integrity (active on gas giant planets).`,
-    blurb: "Designed to take a beating from heavy helium winds. Smells slightly like old balloons.",
-    triggerId: TriggerId.ENTER_GAS_PLANET,
+    desc: `Awards ${BAROSPHERE_SIEVE_BONUS_DATA} data on escape from a gas planet.`,
+    blurb: "Designed to sift valuable helium-3 and other light isotopes from high-altitude atmospheres.",
+    triggerId: TriggerId.ESCAPE_GAS_PLANET,
     image: windShieldImg
   },
   [ModuleId.MAGNETO_SCRAPPER]: {
@@ -162,6 +162,16 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
     desc: 'On beacon collection, grants a 5% chance to trigger a random module.',
     blurb: "A spark here, a spark there, and suddenly the engines are roaring."
   },
+  [HackId.WIND_SHIELD]: {
+    id: HackId.WIND_SHIELD,
+    name: 'Wind Shield',
+    short: '🛡',
+    type: 'hack',
+    cost: 4,
+    color: '#2ed573',
+    desc: 'Passively reduces gas giant core drag by 98% (101% for 2+ stacks, granting a thrust boost).',
+    blurb: "Designed to take a beating from heavy helium winds. Smells slightly like old balloons."
+  },
   [ModuleId.ATMOSPHERIC_SCOOP_V2]: {
     id: ModuleId.ATMOSPHERIC_SCOOP_V2,
     name: 'Atmospheric scoop v2',
@@ -210,16 +220,16 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
     triggerId: TriggerId.PROBE_DEATH_BY_COLLISION,
     image: blackBoxImg
   },
-  [ModuleId.WIND_SHIELD_V2]: {
-    id: ModuleId.WIND_SHIELD_V2,
-    name: 'Wind Shield v2',
-    short: 'WS²',
+  [ModuleId.BAROSPHERE_SIEVE_V2]: {
+    id: ModuleId.BAROSPHERE_SIEVE_V2,
+    name: 'Barosphere Sieve v2',
+    short: 'BS²',
     type: 'module',
     cost: 8,
     color: '#2ed573',
-    desc: `Restores ${WIND_SHIELD_V2_HULL_RESTORED} hull integrity (active on gas giant planets).`,
-    blurb: "Magnetospheric deflection grids. Designed to navigate Jovian storms completely unfazed.",
-    triggerId: TriggerId.ENTER_GAS_PLANET,
+    desc: `Awards ${BAROSPHERE_SIEVE_V2_BONUS_DATA} data on escape from a gas planet.`,
+    blurb: "Advanced isotope extraction manifolds. Sifts gas giant atmospheres like a hot knife through butter.",
+    triggerId: TriggerId.ESCAPE_GAS_PLANET,
     image: windShieldImg
   },
   [ModuleId.MAGNETO_SCRAPPER_V2]: {
@@ -245,8 +255,8 @@ export const UPGRADE_MAPPING: Record<ModuleId, ModuleId> = {
   [ModuleId.GRAVITY_STABILIZER_V2]: ModuleId.GRAVITY_STABILIZER_V2,
   [ModuleId.BLACK_BOX]: ModuleId.BLACK_BOX_V2,
   [ModuleId.BLACK_BOX_V2]: ModuleId.BLACK_BOX_V2,
-  [ModuleId.WIND_SHIELD]: ModuleId.WIND_SHIELD_V2,
-  [ModuleId.WIND_SHIELD_V2]: ModuleId.WIND_SHIELD_V2,
+  [ModuleId.BAROSPHERE_SIEVE]: ModuleId.BAROSPHERE_SIEVE_V2,
+  [ModuleId.BAROSPHERE_SIEVE_V2]: ModuleId.BAROSPHERE_SIEVE_V2,
   [ModuleId.MAGNETO_SCRAPPER]: ModuleId.MAGNETO_SCRAPPER_V2,
   [ModuleId.MAGNETO_SCRAPPER_V2]: ModuleId.MAGNETO_SCRAPPER_V2,
 }

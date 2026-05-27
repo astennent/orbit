@@ -15,7 +15,10 @@ import {
 import {
   BASE_PLANET_DAMAGE,
   GRAVITY_STABILIZER_SHIELD_ABSORPTION,
-  GRAVITY_STABILIZER_V2_SHIELD_ABSORPTION
+  GRAVITY_STABILIZER_V2_SHIELD_ABSORPTION,
+  BASE_GAS_GIANT_DRAG,
+  WIND_SHIELD_1_STACK_MULTIPLIER,
+  WIND_SHIELD_2_STACK_MULTIPLIER
 } from '../constants/moduleConstants'
 
 interface UsePhysicsLoopProps {
@@ -63,6 +66,8 @@ export function usePhysicsLoop({
   const selfDestructTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const wasInsideAtmosphereRef = useRef(false)
   const activeCollidingPlanetIdRef = useRef<string | null>(null)
+  const lastAtmospherePlanetRef = useRef<Planet | null>(null)
+  const gasGiantDamageTimerRef = useRef(0.0)
 
   // Timers for active timed hacks
   const oscillatorTimerRef = useRef(1.0)
@@ -177,6 +182,7 @@ export function usePhysicsLoop({
       const acc = new THREE.Vector3()
       let hitPlanet = false
       let currentCollidingPlanetId: string | null = null
+      let insideGasGiantCore = false
 
       for (const planet of planets) {
         const diff = new THREE.Vector3().subVectors(planet.pos, pState.pos)
@@ -227,6 +233,7 @@ export function usePhysicsLoop({
 
         // Gas Giant Core Halt Check
         if (planet.isGasGiant && dist < planet.radius) {
+          insideGasGiantCore = true
           if (pState.vel.length() < GAS_GIANT_MIN_SPEED_THRESHOLD) {
             pState.vel.set(0, 0, 0)
             probeRef.current = pState
@@ -254,10 +261,34 @@ export function usePhysicsLoop({
         if (dist < planet.atmosphereRadius) {
           let drag = ATMOSPHERE_DRAG
           if (planet.isGasGiant && dist < planet.radius) {
-            drag = ATMOSPHERE_DRAG * 30.0 // extremely high 30x core drag when passing through a gas giant!
+            const wsCount = activeHacksRef.current.filter(id => id === HackId.WIND_SHIELD).length
+            const dragMultiplier = wsCount === 0 ? 1.0 : wsCount === 1 ? WIND_SHIELD_1_STACK_MULTIPLIER : WIND_SHIELD_2_STACK_MULTIPLIER
+            drag = BASE_GAS_GIANT_DRAG * dragMultiplier
           }
           pState.vel.multiplyScalar(1.0 - drag * PHYSICS_DT)
         }
+      }
+
+      // Apply periodic environmental damage inside Gas Giant cores
+      if (insideGasGiantCore) {
+        gasGiantDamageTimerRef.current += PHYSICS_DT
+        if (gasGiantDamageTimerRef.current >= 0.1) {
+          gasGiantDamageTimerRef.current -= 0.1
+          const tookHpDamage = applyDamage(pState, 1, triggerDataToast)
+          if (!tookHpDamage) {
+            triggerDataToast("Shield Absorbed Gas Giant Pressure!", pState.pos, '#00e5ff')
+          }
+          if (pState.integrity <= 0) {
+            dispatchTrigger(TriggerId.PROBE_DEATH, pState)
+            pState.vel.set(0, 0, 0) // Stop probe movement on death!
+            probeRef.current = pState
+            setProbe(pState)
+            resolveFlightOutcome(pState, 'CRASHED', 'Gas Giant Pressure Death')
+            return
+          }
+        }
+      } else {
+        gasGiantDamageTimerRef.current = 0.0
       }
 
       // Update active colliding planet ID ref for consecutive frame checks
@@ -298,6 +329,7 @@ export function usePhysicsLoop({
         if (dist < planet.atmosphereRadius) {
           insideAtmosphere = true
           currentAtmospherePlanet = planet
+          lastAtmospherePlanetRef.current = planet
           break
         }
       }
@@ -310,7 +342,11 @@ export function usePhysicsLoop({
           dispatchTrigger(TriggerId.ENTER_ATMOSPHERE, pState);
         }
       } else if (!insideAtmosphere && wasInsideAtmosphereRef.current) {
-        dispatchTrigger(TriggerId.LEAVE_ATMOSPHERE, pState);
+        if (lastAtmospherePlanetRef.current?.isGasGiant) {
+          dispatchTrigger(TriggerId.ESCAPE_GAS_PLANET, pState);
+        } else {
+          dispatchTrigger(TriggerId.LEAVE_ATMOSPHERE, pState);
+        }
       }
       wasInsideAtmosphereRef.current = insideAtmosphere;
 
