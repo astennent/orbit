@@ -20,9 +20,7 @@ import {
   BLACK_BOX_BONUS_DATA,
   BLACK_BOX_V2_BONUS_DATA,
   MAGNETO_SCRAPPER_RANGE_ADD,
-  MAGNETO_SCRAPPER_V2_RANGE_ADD,
-  BAROSPHERE_SIEVE_BONUS_DATA,
-  BAROSPHERE_SIEVE_V2_BONUS_DATA
+  MAGNETO_SCRAPPER_V2_RANGE_ADD
 } from './moduleConstants'
 
 export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
@@ -81,7 +79,7 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
     type: 'module',
     cost: 4,
     color: '#2ed573',
-    desc: `Awards ${BAROSPHERE_SIEVE_BONUS_DATA} data on escape from a gas planet.`,
+    desc: 'Awards 25% of the sector data quota on escape from a gas planet.',
     blurb: "Designed to sift valuable helium-3 and other light isotopes from high-altitude atmospheres.",
     triggerId: TriggerId.ESCAPE_GAS_PLANET,
     image: windShieldImg
@@ -227,7 +225,7 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
     type: 'module',
     cost: 8,
     color: '#2ed573',
-    desc: `Awards ${BAROSPHERE_SIEVE_V2_BONUS_DATA} data on escape from a gas planet.`,
+    desc: 'Awards 50% of the sector data quota on escape from a gas planet.',
     blurb: "Advanced isotope extraction manifolds. Sifts gas giant atmospheres like a hot knife through butter.",
     triggerId: TriggerId.ESCAPE_GAS_PLANET,
     image: windShieldImg

@@ -134,7 +134,7 @@ export function usePhysicsLoop({
       pState,
       activeModulesRef.current,
       activeHacksRef.current,
-      { triggerDataToast }
+      { triggerDataToast, sectorQuota }
     );
   }
 

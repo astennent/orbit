@@ -23,6 +23,7 @@ import {
 export interface TriggerContext {
   triggerDataToast: (text: string, pos: THREE.Vector3, color?: string) => void;
   forceTriggered?: boolean;
+  sectorQuota?: number;
 }
 
 /**
@@ -170,17 +171,23 @@ export function executeModuleEffect(moduleIndex: number, moduleId: ModuleId, pSt
       context.triggerDataToast(`BLACK BOX V2: +${BLACK_BOX_V2_BONUS_DATA} DATA SECURED`, pState.pos, '#ff4757');
       break;
 
-    case ModuleId.BAROSPHERE_SIEVE:
-      console.log(`Triggered BAROSPHERE_SIEVE! Collecting ${BAROSPHERE_SIEVE_BONUS_DATA} data.`);
-      pState.data += BAROSPHERE_SIEVE_BONUS_DATA;
-      context.triggerDataToast(`BAROSPHERE SIEVE: +${BAROSPHERE_SIEVE_BONUS_DATA} DATA`, pState.pos, '#2ed573');
+    case ModuleId.BAROSPHERE_SIEVE: {
+      const quota = context.sectorQuota;
+      const sieveBonus = quota !== undefined ? Math.round(quota * 0.25) : BAROSPHERE_SIEVE_BONUS_DATA;
+      console.log(`Triggered BAROSPHERE_SIEVE! Collecting ${sieveBonus} data.`);
+      pState.data += sieveBonus;
+      context.triggerDataToast(`BAROSPHERE SIEVE: +${sieveBonus} DATA`, pState.pos, '#2ed573');
       break;
+    }
 
-    case ModuleId.BAROSPHERE_SIEVE_V2:
-      console.log(`Triggered BAROSPHERE_SIEVE_V2! Collecting ${BAROSPHERE_SIEVE_V2_BONUS_DATA} data.`);
-      pState.data += BAROSPHERE_SIEVE_V2_BONUS_DATA;
-      context.triggerDataToast(`BAROSPHERE SIEVE V2: +${BAROSPHERE_SIEVE_V2_BONUS_DATA} DATA`, pState.pos, '#2ed573');
+    case ModuleId.BAROSPHERE_SIEVE_V2: {
+      const quota = context.sectorQuota;
+      const sieveBonus = quota !== undefined ? Math.round(quota * 0.50) : BAROSPHERE_SIEVE_V2_BONUS_DATA;
+      console.log(`Triggered BAROSPHERE_SIEVE_V2! Collecting ${sieveBonus} data.`);
+      pState.data += sieveBonus;
+      context.triggerDataToast(`BAROSPHERE SIEVE V2: +${sieveBonus} DATA`, pState.pos, '#2ed573');
       break;
+    }
 
     case ModuleId.MAGNETO_SCRAPPER:
       console.log(`Triggered MAGNETO_SCRAPPER! Increasing magnet range.`);
