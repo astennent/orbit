@@ -8,7 +8,6 @@ import {
   GRAVITATIONAL_CONSTANT,
   ATMOSPHERE_DRAG,
   PHYSICS_DT,
-  MIN_SPEED_THRESHOLD,
   GAS_GIANT_MIN_SPEED_THRESHOLD,
   OUT_OF_BOUNDS_LIMIT
 } from '../constants'
@@ -524,21 +523,7 @@ export function usePhysicsLoop({
         return
       }
 
-      // 6. Frictional Stop
-      if (pState.vel.length() < MIN_SPEED_THRESHOLD) {
-        pState.vel.set(0, 0, 0)
-        probeRef.current = pState
-        setProbe(pState)
 
-        if (selfDestructTimeoutRef.current) {
-          clearTimeout(selfDestructTimeoutRef.current);
-          selfDestructTimeoutRef.current = null;
-        }
-        setShowSelfDestruct(false);
-
-        resolveFlightOutcome(pState, 'STOPPED', 'Safe Orbit')
-        return
-      }
 
       probeRef.current = pState
       setProbe(pState)
