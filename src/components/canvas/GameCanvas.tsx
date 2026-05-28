@@ -26,6 +26,13 @@ function CameraController({ probe, gameState }: CameraControllerProps) {
   const wasdOffset = useRef(new THREE.Vector3(0, 0, 0))
   const activeKeys = useRef<{ [key: string]: boolean }>({})
 
+  // Reset pan offset on level / state reset to ensure camera focuses cleanly on the launchpad
+  useEffect(() => {
+    if (gameState === 'IDLE' || gameState === 'LAUNCHING') {
+      wasdOffset.current.set(0, 0, 0)
+    }
+  }, [gameState])
+
   // Listen to keyboard events to track keys pressed
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -71,13 +78,14 @@ function CameraController({ probe, gameState }: CameraControllerProps) {
     if (!camera) return
 
     let targetCenter = new THREE.Vector3(0, 0, 0)
+    const isFlight = gameState === 'FLIGHT'
+    const isPostRun = gameState === 'CRASHED' || gameState === 'STOPPED' || gameState === 'WIN' || gameState === 'PORTAL_EXIT'
 
-    if (gameState !== 'IDLE' && gameState !== 'LAUNCHING') {
+    if (isFlight) {
       // Smoothly lerp wasdOffset back to zero when launched to refocus on the probe
       wasdOffset.current.lerp(new THREE.Vector3(0, 0, 0), 0.08)
-      targetCenter.copy(probe.pos).add(wasdOffset.current)
     } else {
-      // Apply keyboard movement when not launched
+      // Apply keyboard movement when not in flight (IDLE, LAUNCHING, or Post-Run outcomes)
       const keys = activeKeys.current
       let dx = 0
       let dz = 0
@@ -92,7 +100,12 @@ function CameraController({ probe, gameState }: CameraControllerProps) {
         const moveDir = new THREE.Vector3(dx, 0, dz).normalize().multiplyScalar(moveSpeed * delta)
         wasdOffset.current.add(moveDir)
       }
+    }
 
+    // Set target center: follow the probe (if launched / post-run outcomes) + wasdOffset, or just wasdOffset if still at launchpad
+    if (isFlight || isPostRun) {
+      targetCenter.copy(probe.pos).add(wasdOffset.current)
+    } else {
       targetCenter.copy(wasdOffset.current)
     }
 
@@ -462,6 +475,7 @@ export function GameCanvas({
           startPos={aimStartPos}
           startVel={aimVel}
           planets={planets}
+          gameState={gameState}
         />
 
         {/* Slingshot Visualizer — Curved force wedge / segmented power pyramid */}
