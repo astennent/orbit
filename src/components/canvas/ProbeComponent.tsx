@@ -22,7 +22,7 @@ export function ProbeComponent({ probe, gameState, planets }: ProbeComponentProp
     // Generate color interpolation from pure black (oldest, transparent under additive blending) to pure white (newest)
     const colors = new Float32Array(probe.trail.length * 3)
     for (let i = 0; i < probe.trail.length; i++) {
-      const t = i / (probe.trail.length - 1)
+      const t = probe.trail.length > 1 ? i / (probe.trail.length - 1) : 1.0
       colors[i * 3] = t     // Red
       colors[i * 3 + 1] = t // Green
       colors[i * 3 + 2] = t // Blue
