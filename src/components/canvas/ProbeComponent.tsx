@@ -70,6 +70,15 @@ export function ProbeComponent({ probe, gameState, planets }: ProbeComponentProp
           setHovered(false)
         }}
       >
+        {/* Dynamic searchlight / headlight that travels with the probe to illuminate nearby planets and hazards */}
+        <pointLight
+          position={[0, 0.5, 0]} // slightly raised to cast beautiful oblique shadows on craters and terrain relief
+          intensity={8.0}
+          distance={32.0}
+          decay={1.5}
+          color="#dcf6ff" // Crisp cool white headlight
+        />
+
         {/* Main Probe Body — Polished reflective chrome sphere */}
         <mesh>
           <sphereGeometry args={[0.38, 32, 32]} />

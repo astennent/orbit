@@ -333,14 +333,10 @@ export function GameCanvas({
           <Nebula key={level} />
         </Suspense>
 
-        {/* Raygun Gothic lighting — warm key light + cold fill */}
-        <ambientLight intensity={0.35} color="#b0c8f0" />
-        {/* Warm top key light — simulates a 1950s studio spot */}
-        <pointLight position={[0, 20, 5]} intensity={3.5} color="#fff5e0" />
-        {/* Cool cyan fill from the side */}
-        <pointLight position={[-15, 8, 0]} intensity={2.0} color="#00e5ff" />
-        {/* Warm gold backlight from below — creates beautiful under-rim glow */}
-        <pointLight position={[15, -5, -10]} intensity={1.5} color="#ffd700" />
+        {/* Raygun Gothic lighting — warm key light + cold fill + global sunlight */}
+        <ambientLight intensity={0.65} color="#b0c8f0" />
+        {/* Powerful global sunlight to fully illuminate the entire sandbox map */}
+        <directionalLight position={[30, 50, 30]} intensity={2.8} color="#ffffff" />
 
         {/* Beautiful Particle Starfield */}
         <points>
@@ -424,15 +420,19 @@ export function GameCanvas({
           )
         })}
 
-        {/* Celestial Attractors (Planets) */}
-        {planets.map(p => (
-          <PlanetComponent key={p.id} planet={p} />
-        ))}
+        {/* Celestial Attractors (Planets) — Wrapped in Suspense to safely pre-load static texture maps */}
+        <Suspense fallback={null}>
+          {planets.map(p => (
+            <PlanetComponent key={p.id} planet={p} />
+          ))}
+        </Suspense>
 
-        {/* Scattered Asteroids */}
-        {asteroids && asteroids.map(a => (
-          a.health > 0 && <AsteroidComponent key={a.id} asteroid={a} />
-        ))}
+        {/* Scattered Asteroids — Wrapped in Suspense to safely pre-load static texture maps */}
+        <Suspense fallback={null}>
+          {asteroids && asteroids.map(a => (
+            a.health > 0 && <AsteroidComponent key={a.id} asteroid={a} />
+          ))}
+        </Suspense>
 
         {/* The Target Exit Portal */}
         <ExitPortalComponent portal={portal} />

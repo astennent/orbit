@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Html } from '@react-three/drei'
+import { Html, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { Asteroid } from '../../types'
 
@@ -11,6 +11,24 @@ interface AsteroidComponentProps {
 export function AsteroidComponent({ asteroid }: AsteroidComponentProps) {
   const meshRef = useRef<THREE.Mesh>(null!)
   const [hovered, setHovered] = useState<boolean>(false)
+
+  // Pre-load the high-fidelity AI-generated asteroid textures
+  const iceTexture = useTexture('/asteroid_ice_texture.png')
+  const carbonTexture = useTexture('/asteroid_carbon_texture.png')
+  const metallicTexture = useTexture('/asteroid_metallic_texture.png')
+
+  // Bind the appropriate high-fidelity texture based on classification
+  const texture = useMemo(() => {
+    let t = metallicTexture
+    if (asteroid.type === 'ice') {
+      t = iceTexture
+    } else if (asteroid.type === 'carbon') {
+      t = carbonTexture
+    }
+    t.wrapS = THREE.RepeatWrapping
+    t.wrapT = THREE.ClampToEdgeWrapping
+    return t
+  }, [asteroid.type, iceTexture, carbonTexture, metallicTexture])
 
   // Slow spin in randomized axes to look like realistic drifting debris
   useFrame((_, delta) => {
@@ -50,7 +68,7 @@ export function AsteroidComponent({ asteroid }: AsteroidComponentProps) {
         return {
           color: '#ff4d4d', // Industrial Red
           roughness: 0.25,
-          metalness: 0.95,
+          metalness: 0.55,
           emissive: '#ff002b', // Energetic volcanic red glow
           emissiveIntensity: 0.75,
           transparent: false,
@@ -87,7 +105,10 @@ export function AsteroidComponent({ asteroid }: AsteroidComponentProps) {
       >
         <dodecahedronGeometry args={geomArgs} />
         <meshStandardMaterial
-          color={details.color}
+          color="#ffffff"
+          map={texture || undefined}
+          bumpMap={texture || undefined}
+          bumpScale={asteroid.type === 'ice' ? 0.06 : asteroid.type === 'carbon' ? 0.15 : 0.25}
           roughness={details.roughness}
           metalness={details.metalness}
           emissive={details.emissive}
@@ -116,7 +137,7 @@ export function AsteroidComponent({ asteroid }: AsteroidComponentProps) {
             <div><strong>Size Class:</strong> {asteroid.size.toUpperCase()}</div>
             <div><strong>Hull Impact:</strong> <span style={{ color: 'var(--glow-red)' }}>-{getDamageValue()} Integrity</span></div>
             <div><strong>Health Integrity:</strong> {asteroid.health.toFixed(0)} / {asteroid.maxHealth} HP</div>
-            
+
             <div style={{ marginTop: '6px', color: 'var(--chrome-dim)', fontSize: '9.5px', lineHeight: '1.3' }}>
               {details.desc} Size increases damage, yields, and hack/module drop chances. Breaks on impact.
             </div>

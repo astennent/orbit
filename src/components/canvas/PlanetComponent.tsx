@@ -1,6 +1,6 @@
 import { useRef, useState, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Html } from '@react-three/drei'
+import { Html, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { Planet } from '../../types'
 
@@ -13,130 +13,22 @@ export function PlanetComponent({ planet }: PlanetComponentProps) {
   const atmoRef = useRef<THREE.Mesh>(null!)
   const [hovered, setHovered] = useState<boolean>(false)
 
-  // Procedurally generate a detailed 512x256 equirectangular canvas texture for each planet
+  // Pre-load the high-fidelity AI-generated planet textures
+  const rockyTexture = useTexture('/rocky_planet_texture.png')
+  const gasTexture = useTexture('/gas_planet_texture.png')
+
+  // Bind the appropriate high-fidelity texture based on planet classification
   const texture = useMemo(() => {
-    const canvas = document.createElement('canvas')
-    canvas.width = 512
-    canvas.height = 256
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return null
-
-    // 1. Solid background base color
-    ctx.fillStyle = planet.color
-    ctx.fillRect(0, 0, 512, 256)
-
     if (planet.isGasGiant) {
-      // ── GASEOUS PLANET TEXTURE (Latitudinal Bands & Great Red Spot Storms) ──
-      const numBands = 9
-      for (let i = 0; i < numBands; i++) {
-        const y = (256 / numBands) * i + Math.random() * 8 - 4
-        const height = (256 / numBands) * (0.35 + Math.random() * 0.45)
-        
-        const grad = ctx.createLinearGradient(0, y, 0, y + height)
-        grad.addColorStop(0, 'rgba(255, 255, 255, 0.15)')
-        grad.addColorStop(0.5, 'rgba(0, 0, 0, 0.28)')
-        grad.addColorStop(1, 'rgba(255, 255, 255, 0.05)')
-        
-        ctx.fillStyle = grad
-        ctx.fillRect(0, y, 512, height)
-      }
-
-      for (let i = 0; i < 4; i++) {
-        const cx = Math.random() * 512
-        const cy = 40 + Math.random() * 176
-        const r = 16 + Math.random() * 26
-
-        const radGrad = ctx.createRadialGradient(cx, cy, 2, cx, cy, r)
-        radGrad.addColorStop(0, 'rgba(255, 255, 255, 0.38)')
-        radGrad.addColorStop(0.35, 'rgba(0, 0, 0, 0.22)')
-        radGrad.addColorStop(1, 'rgba(255, 255, 255, 0)')
-
-        ctx.fillStyle = radGrad
-        ctx.beginPath()
-        ctx.arc(cx, cy, r, 0, Math.PI * 2)
-        ctx.fill()
-      }
-
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)'
-      for (let i = 0; i < 220; i++) {
-        const x = Math.random() * 512
-        const y = Math.random() * 256
-        const size = 1 + Math.random() * 2.5
-        ctx.fillRect(x, y, size, size)
-      }
+      gasTexture.wrapS = THREE.RepeatWrapping
+      gasTexture.wrapT = THREE.ClampToEdgeWrapping
+      return gasTexture
     } else {
-      // ── ROCKY PLANET TEXTURE (Tectonic Plates, Fractures & 3D Shaded Craters) ──
-      // 1. Draw craggy landmass patches/continent outlines
-      for (let i = 0; i < 8; i++) {
-        const cx = Math.random() * 512
-        const cy = Math.random() * 256
-        const r = 40 + Math.random() * 75
-        const radGrad = ctx.createRadialGradient(cx, cy, 5, cx, cy, r)
-        radGrad.addColorStop(0, 'rgba(0, 0, 0, 0.32)') // Valley shadow
-        radGrad.addColorStop(0.65, 'rgba(255, 255, 255, 0.08)') // Highland glow
-        radGrad.addColorStop(1, 'rgba(0, 0, 0, 0)')
-        ctx.fillStyle = radGrad
-        ctx.beginPath()
-        ctx.arc(cx, cy, r, 0, Math.PI * 2)
-        ctx.fill()
-      }
-
-      // 2. Draw craggy tectonic fractal faults/crevices
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.38)'
-      ctx.lineWidth = 1.6
-      for (let i = 0; i < 4; i++) {
-        ctx.beginPath()
-        let px = Math.random() * 512
-        let py = Math.random() * 256
-        ctx.moveTo(px, py)
-        for (let j = 0; j < 5; j++) {
-          px += (Math.random() * 60 - 30)
-          py += (Math.random() * 40 - 20)
-          ctx.lineTo(px, py)
-        }
-        ctx.stroke()
-      }
-
-      // 3. Draw procedural impact craters with light-shadow rim offsets
-      for (let i = 0; i < 16; i++) {
-        const cx = Math.random() * 512
-        const cy = Math.random() * 256
-        const r = 3 + Math.random() * 11
-
-        // Shadow side offset (bottom-right shadow cast)
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)'
-        ctx.beginPath()
-        ctx.arc(cx + 0.8, cy + 0.8, r, 0, Math.PI * 2)
-        ctx.fill()
-
-        // Highlight side offset (top-left rim sun catch)
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.28)'
-        ctx.beginPath()
-        ctx.arc(cx - 0.8, cy - 0.8, r, 0, Math.PI * 2)
-        ctx.fill()
-
-        // Inner crater basin floor depth
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.18)'
-        ctx.beginPath()
-        ctx.arc(cx, cy, r - 1.2, 0, Math.PI * 2)
-        ctx.fill()
-      }
-
-      // 4. Add fine high-frequency rocky noise/pebbles specks
-      for (let i = 0; i < 750; i++) {
-        const x = Math.random() * 512
-        const y = Math.random() * 256
-        const shade = Math.random() > 0.5 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.12)'
-        ctx.fillStyle = shade
-        ctx.fillRect(x, y, 1, 1)
-      }
+      rockyTexture.wrapS = THREE.RepeatWrapping
+      rockyTexture.wrapT = THREE.ClampToEdgeWrapping
+      return rockyTexture
     }
-
-    const tex = new THREE.CanvasTexture(canvas)
-    tex.wrapS = THREE.RepeatWrapping
-    tex.wrapT = THREE.ClampToEdgeWrapping
-    return tex
-  }, [planet.color, planet.isGasGiant])
+  }, [planet.isGasGiant, gasTexture, rockyTexture])
 
   // Add a nice slow rotation to the planet core
   useFrame((_, delta) => {
@@ -175,7 +67,7 @@ export function PlanetComponent({ planet }: PlanetComponentProps) {
       </mesh>
 
       {/* Solid core polished candy sphere with custom procedural texture mapping and relief bump mapping */}
-      <mesh 
+      <mesh
         ref={coreRef}
         onPointerOver={(e) => {
           e.stopPropagation()
@@ -188,14 +80,14 @@ export function PlanetComponent({ planet }: PlanetComponentProps) {
       >
         <sphereGeometry args={[planet.radius, 64, 64]} />
         <meshStandardMaterial
-          color={planet.color}
+          color="#ffffff"
           map={texture || undefined}
           bumpMap={texture || undefined}
-          bumpScale={0.05}
-          roughness={planet.isGasGiant ? 0.45 : 0.65} // Matte finish for rock, slightly more lustrous for gas bands
-          metalness={planet.isGasGiant ? 0.15 : 0.05}
+          bumpScale={planet.isGasGiant ? 0.02 : 0.22} // High bump relief for craggy Rocky worlds
+          roughness={planet.isGasGiant ? 0.35 : 0.85} // Matte finish for rock, higher gloss for gas
+          metalness={planet.isGasGiant ? 0.25 : 0.0}
           emissive={planet.color}
-          emissiveIntensity={0.15}
+          emissiveIntensity={planet.isGasGiant ? 0.38 : 0.12} // Gas giants glow from within to look bright and distinct
         />
       </mesh>
 
