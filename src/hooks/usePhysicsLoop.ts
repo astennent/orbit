@@ -437,7 +437,8 @@ export function usePhysicsLoop({
       const lastTrailPt = pState.trail[pState.trail.length - 1]
       if (!lastTrailPt || lastTrailPt.distanceTo(pState.pos) > 0.08) {
         pState.trail.push(pState.pos.clone())
-        if (pState.trail.length > 400) {
+        // Large safety cap to allow rendering the entire flight while protecting memory profiles
+        if (pState.trail.length > 15000) {
           pState.trail.shift()
         }
       }

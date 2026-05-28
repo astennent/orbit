@@ -1,6 +1,7 @@
-import { useMemo } from 'react'
+import { useMemo, useRef, memo } from 'react'
+import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { Planet } from '../../types'
+import { Planet, GameState } from '../../types'
 import {
   GRAVITATIONAL_CONSTANT,
   ATMOSPHERE_DRAG,
@@ -14,6 +15,7 @@ interface TrajectoryLineProps {
   startPos: THREE.Vector3
   startVel: THREE.Vector3 | null
   planets: Planet[]
+  gameState: GameState
 }
 
 interface Segment {
@@ -21,10 +23,22 @@ interface Segment {
   inAtmosphere: boolean
 }
 
-export function TrajectoryLine({ startPos, startVel, planets }: TrajectoryLineProps) {
+function TrajectoryLineComponent({ startPos, startVel, planets, gameState }: TrajectoryLineProps) {
+  const groupRef = useRef<THREE.Group>(null!)
+  const frozenSegmentsRef = useRef<Segment[]>([])
+  const fadeOpacityRef = useRef(1.0)
+
   // 1. Calculate future trajectory points by running virtual integration
   const segments = useMemo(() => {
-    if (!startVel || startVel.lengthSq() === 0 || !planets || planets.length === 0) return []
+    // If launched (in flight/crashed/win), preserve the last calculated segment lines so they can be smoothly faded out!
+    if (gameState !== 'IDLE' && gameState !== 'LAUNCHING') {
+      return frozenSegmentsRef.current
+    }
+
+    if (!startVel || startVel.lengthSq() === 0 || !planets || planets.length === 0) {
+      frozenSegmentsRef.current = []
+      return []
+    }
 
     const tempPos = startPos.clone()
     const tempVel = startVel.clone()
@@ -141,11 +155,43 @@ export function TrajectoryLine({ startPos, startVel, planets }: TrajectoryLinePr
     }
     parsedSegments.push(currentSegment)
 
+    frozenSegmentsRef.current = parsedSegments
     return parsedSegments
-  }, [startPos, startVel, planets])
+  }, [startPos, startVel, planets, gameState])
+
+  // Performant R3F animation hook: directly updates WebGL material opacities on the frame tick
+  useFrame((_, delta) => {
+    if (!groupRef.current) return
+
+    if (gameState !== 'IDLE' && gameState !== 'LAUNCHING') {
+      // Fade out smoothly over ~1.1 seconds
+      fadeOpacityRef.current = Math.max(0, fadeOpacityRef.current - delta * 0.9)
+
+      groupRef.current.traverse((child) => {
+        if (child instanceof THREE.Line) {
+          const mat = child.material as THREE.LineBasicMaterial
+          mat.transparent = true
+          mat.opacity = (child.userData.baseOpacity || 0.8) * fadeOpacityRef.current
+          if (fadeOpacityRef.current === 0) {
+            child.visible = false
+          }
+        }
+      })
+    } else {
+      // Aiming: fully visible with base opacities
+      fadeOpacityRef.current = 1.0
+      groupRef.current.traverse((child) => {
+        if (child instanceof THREE.Line) {
+          child.visible = true
+          const mat = child.material as THREE.LineBasicMaterial
+          mat.opacity = child.userData.baseOpacity || 0.8
+        }
+      })
+    }
+  })
 
   return (
-    <group>
+    <group ref={groupRef}>
       {segments.map((seg, idx) => {
         if (seg.points.length < 2) return null
 
@@ -154,28 +200,30 @@ export function TrajectoryLine({ startPos, startVel, planets }: TrajectoryLinePr
         const geometry = new THREE.BufferGeometry()
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
 
+        const baseOpacity = seg.inAtmosphere ? 0.35 : 0.8
+
         if (seg.inAtmosphere) {
           // Inside gravity well: dotted (dashed) and faded purple/red
           return (
-            <line key={idx}>
+            <line key={idx} {...({ userData: { baseOpacity } } as any)}>
               <primitive object={geometry} attach="geometry" />
               <lineBasicMaterial
                 color="#ff4757"
                 transparent
-                opacity={0.35}
+                opacity={baseOpacity}
               />
             </line>
           )
         } else {
           // In deep space: solid electric cyan
           return (
-            <line key={idx}>
+            <line key={idx} {...({ userData: { baseOpacity } } as any)}>
               <primitive object={geometry} attach="geometry" />
               <lineBasicMaterial
                 color="#00e5ff"
                 linewidth={2.5}
                 transparent
-                opacity={0.8}
+                opacity={baseOpacity}
               />
             </line>
           )
@@ -184,3 +232,16 @@ export function TrajectoryLine({ startPos, startVel, planets }: TrajectoryLinePr
     </group>
   )
 }
+
+export const TrajectoryLine = memo(TrajectoryLineComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.gameState === nextProps.gameState &&
+    prevProps.planets === nextProps.planets &&
+    prevProps.startPos.equals(nextProps.startPos) &&
+    ((prevProps.startVel === null && nextProps.startVel === null) ||
+      (prevProps.startVel !== null &&
+        nextProps.startVel !== null &&
+        prevProps.startVel.equals(nextProps.startVel)))
+  )
+})
+

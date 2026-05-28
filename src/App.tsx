@@ -190,6 +190,7 @@ export default function App() {
       probeRef.current = createFreshProbe(aimStartPos, firingVelocity, [aimStartPos])
       setProbe({ ...probeRef.current })
       setGameState('FLIGHT')
+      setAimVel(null) // Clear aim velocity on launch so it cleans up on level resets
 
       if (selfDestructTimeoutRef.current) {
         clearTimeout(selfDestructTimeoutRef.current)

@@ -18,8 +18,19 @@ export function ProbeComponent({ probe, gameState, planets }: ProbeComponentProp
     
     // Extract x, y, z floats for the BufferAttribute
     const positions = new Float32Array(probe.trail.flatMap(p => [p.x, p.y, p.z]))
+
+    // Generate color interpolation from pure black (oldest, transparent under additive blending) to pure white (newest)
+    const colors = new Float32Array(probe.trail.length * 3)
+    for (let i = 0; i < probe.trail.length; i++) {
+      const t = i / (probe.trail.length - 1)
+      colors[i * 3] = t     // Red
+      colors[i * 3 + 1] = t // Green
+      colors[i * 3 + 2] = t // Blue
+    }
+
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
     return geometry
   }, [probe.trail])
 
@@ -50,10 +61,11 @@ export function ProbeComponent({ probe, gameState, planets }: ProbeComponentProp
         <line>
           <primitive object={lineGeometry} attach="geometry" />
           <lineBasicMaterial
-            color={probeColor}
+            vertexColors
             linewidth={3}
             transparent
-            opacity={0.75}
+            opacity={0.5}
+            blending={THREE.AdditiveBlending}
           />
         </line>
       )}
