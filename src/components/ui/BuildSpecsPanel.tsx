@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { UpgradeEntry } from '../../types'
 import { ModuleCartridge } from './ModuleCartridge'
 
@@ -15,6 +15,18 @@ export const BuildSpecsPanel: React.FC<BuildSpecsPanelProps> = ({
   activeHacks,
   onRearrange
 }) => {
+  // Group identical active hacks together in the UI
+  const groupedHacks = useMemo(() => {
+    const groups: { [id: string]: { hack: UpgradeEntry; count: number } } = {}
+    for (const hack of activeHacks) {
+      if (groups[hack.id]) {
+        groups[hack.id].count++
+      } else {
+        groups[hack.id] = { hack, count: 1 }
+      }
+    }
+    return Object.values(groups)
+  }, [activeHacks])
   const renderDataCoresProgress = (currentDataCores: number) => {
     const totalBars = 25;
     const bitsPerBar = 4;
@@ -157,14 +169,22 @@ export const BuildSpecsPanel: React.FC<BuildSpecsPanelProps> = ({
               overflowY: 'auto',
               paddingRight: '6px'
             }}>
-              {activeHacks.map((hack) => {
+              {groupedHacks.map(({ hack, count }) => {
                 return (
                   <div key={hack.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 8px', background: 'rgba(255,255,255,0.02)', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.04)' }}>
                     <span style={{ color: hack.color, fontSize: '12px', fontWeight: 'bold' }}>
                       {hack.short}
                     </span>
                     <div>
-                      <div style={{ fontWeight: 'bold', color: '#fff', fontSize: '10.5px' }}>{hack.name}</div>
+                      <div style={{ fontWeight: 'bold', color: '#fff', fontSize: '10.5px' }}>
+                        {hack.name}
+                        {count > 1 && (
+                          <span style={{ fontWeight: 'normal', color: 'var(--chrome-dim)' }}>
+                            {' '}
+                            (<span style={{ color: hack.color, fontWeight: 'bold' }}>{count}x</span>)
+                          </span>
+                        )}
+                      </div>
                       <div style={{ color: 'var(--chrome-dim)', fontSize: '9.5px' }}>
                         {hack.desc}
                       </div>
