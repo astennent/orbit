@@ -86,6 +86,7 @@ export function PlanetComponent({ planet }: PlanetComponentProps) {
           bumpScale={planet.isGasGiant ? 0.02 : 0.22} // High bump relief for craggy Rocky worlds
           roughness={planet.isGasGiant ? 0.35 : 0.85} // Matte finish for rock, higher gloss for gas
           metalness={planet.isGasGiant ? 0.25 : 0.0}
+          opacity={planet.isGasGiant ? 0.95 : 1}
           emissive={planet.color}
           emissiveIntensity={planet.isGasGiant ? 0.38 : 0.12} // Gas giants glow from within to look bright and distinct
         />

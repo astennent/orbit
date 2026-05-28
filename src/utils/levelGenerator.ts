@@ -34,8 +34,16 @@ export function generatePlanets(level: number): Planet[] {
     const suffix = suffixes[i];
     const planetId = `core-planet-${level}-${suffix.toLowerCase()}`;
 
-    const clampedRadius = 1.2 + Math.random() * 1.6;
-    const mass = clampedRadius * 20 + Math.random() * 15;
+    // level > 1 prevents gas giants on first level.
+    // i > 0 ensures at least the first planet is always rocky.
+    const isGasGiant = level > 1 && i > 0 && Math.random() < 0.25;
+
+    // Gas giants are always physically larger than rocky worlds (Gas: 2.2 to 3.2, Rocky: 1.1 to 1.8)
+    const radius = isGasGiant 
+      ? 2.2 + Math.random() * 1.0 
+      : 1.1 + Math.random() * 0.7;
+
+    const mass = radius * 20 + Math.random() * 15;
 
     const nameIndex = level - 1 + i;
     const colorIndex = level - 1 + i;
@@ -68,18 +76,14 @@ export function generatePlanets(level: number): Planet[] {
       attempts++;
     }
 
-    // level > 1 prevents gas giants on first level.
-    // i > 0 means at least one planet is rocky.
-    const isGasGiant = level > 1 && i > 0 && Math.random() < 0.25;
-
     planets.push({
       id: planetId,
       name: isGasGiant ? `${name} (Gas Giant)` : name,
       pos: pos.clone(),
-      radius: clampedRadius,
+      radius: radius,
       mass: mass,
       color: color,
-      atmosphereRadius: clampedRadius * 2.5,
+      atmosphereRadius: radius * 2.5,
       isGasGiant: isGasGiant
     });
   }
