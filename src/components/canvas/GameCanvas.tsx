@@ -2,13 +2,14 @@ import { useRef, useMemo, useEffect, useState, Suspense } from 'react'
 import { Canvas, ThreeEvent, useThree, useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
-import { Planet, ExitPortal, Probe, Beacon, GameState, DataToast, Asteroid } from '../../types'
+import { Planet, ExitPortal, Probe, Beacon, GameState, DataToast, Asteroid, Explosion } from '../../types'
 import { PlanetComponent } from './PlanetComponent'
 import { ExitPortalComponent } from './ExitPortalComponent'
 import { ProbeComponent } from './ProbeComponent'
 import { TrajectoryLine } from './TrajectoryLine'
 import { AsteroidComponent } from './AsteroidComponent'
 import { Nebula } from './Nebula'
+import { ExplosionEffect } from './ExplosionEffect'
 import { LAUNCH_SPEED_MULTIPLIER, OUT_OF_BOUNDS_LIMIT } from '../../constants'
 import { getBeaconColor } from '../../utils/statusFormatters'
 
@@ -205,6 +206,8 @@ interface GameCanvasProps {
   onAimMove: (worldPoint: THREE.Vector3) => void
   onAimRelease: () => void
   toasts: DataToast[]
+  explosions: Explosion[]
+  onExplosionComplete: (id: string) => void
 }
 
 export function GameCanvas({
@@ -221,7 +224,9 @@ export function GameCanvas({
   onAimStart,
   onAimMove,
   onAimRelease,
-  toasts
+  toasts,
+  explosions,
+  onExplosionComplete
 }: GameCanvasProps) {
   const dragPlaneRef = useRef<THREE.Mesh>(null!)
   const [hoveredBeaconId, setHoveredBeaconId] = useState<string | null>(null)
@@ -480,6 +485,17 @@ export function GameCanvas({
         {gameState !== 'IDLE' && gameState !== 'LAUNCHING' && (
           <ProbeComponent probe={probe} gameState={gameState} planets={planets} />
         )}
+
+        {/* Dynamic hardware-accelerated particle explosions on collisions */}
+        {explosions.map(expl => (
+          <ExplosionEffect
+            key={expl.id}
+            position={expl.pos}
+            color={expl.color}
+            count={expl.count}
+            onComplete={() => onExplosionComplete(expl.id)}
+          />
+        ))}
 
         {/* Immersive 3D Floating Data Toasts */}
         {toasts.map(toast => (

@@ -154,7 +154,9 @@ export default function App() {
     selfDestructTimeoutRef,
     handleSelfDestruct,
     logs,
-    setLogs
+    setLogs,
+    explosions,
+    handleExplosionComplete
   } = usePhysicsLoop({
     gameState,
     setGameState,
@@ -419,6 +421,8 @@ export default function App() {
         onAimMove={handleAimMove}
         onAimRelease={handleAimRelease}
         toasts={toasts}
+        explosions={explosions}
+        onExplosionComplete={handleExplosionComplete}
       />
 
       {/* Shop Overlay Modal */}

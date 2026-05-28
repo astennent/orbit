@@ -157,5 +157,12 @@ export interface LogEntry {
   timeStr: number;
 }
 
+export interface Explosion {
+  id: string;
+  pos: THREE.Vector3;
+  color: string;
+  count: number;
+}
+
 
 

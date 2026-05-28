@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { Probe, Planet, ExitPortal, Beacon, Asteroid, DataToast, GameState, ModuleId, HackId, TriggerId, LogEntry } from '../types'
+import { Probe, Planet, ExitPortal, Beacon, Asteroid, DataToast, GameState, ModuleId, HackId, TriggerId, LogEntry, Explosion } from '../types'
 import { UPGRADE_REGISTRY, MODULES_REGISTRY, HACKS_REGISTRY } from '../constants/upgrades'
 import { handleTrigger, executeModuleEffect } from '../utils/moduleEffects'
 import { createFreshProbe, applyDamage } from '../utils/probeUtils'
@@ -60,6 +60,21 @@ export function usePhysicsLoop({
   const [toasts, setToasts] = useState<DataToast[]>([])
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [showSelfDestruct, setShowSelfDestruct] = useState<boolean>(false)
+  const [explosions, setExplosions] = useState<Explosion[]>([])
+
+  const triggerExplosion = (pos: THREE.Vector3, color: string, count: number) => {
+    const newExplosion: Explosion = {
+      id: `expl-${Date.now()}-${Math.random()}`,
+      pos: pos.clone(),
+      color,
+      count
+    }
+    setExplosions(prev => [...prev, newExplosion])
+  }
+
+  const handleExplosionComplete = (id: string) => {
+    setExplosions(current => current.filter(x => x.id !== id))
+  }
 
   const probeRef = useRef<Probe>(createFreshProbe(aimStartPos))
   const beaconsRef = useRef<Beacon[]>(initialSector.beacons)
@@ -221,11 +236,13 @@ export function usePhysicsLoop({
 
             if (pState.integrity <= 0) {
               hitPlanet = true
+              triggerExplosion(pState.pos, '#ff471a', 95) // Massive fiery explosion on death
               dispatchTrigger(TriggerId.PLANET_DEATH, pState);
               dispatchTrigger(TriggerId.PROBE_DEATH, pState);
               dispatchTrigger(TriggerId.PROBE_DEATH_BY_COLLISION, pState);
               pState.vel.set(0, 0, 0); // Stop probe movement on death!
             } else {
+              triggerExplosion(pState.pos, planet.color, 30) // Medium thematic explosion on bounce
               dispatchTrigger(TriggerId.PLANET_BOUNCE, pState);
             }
           }
@@ -487,6 +504,11 @@ export function usePhysicsLoop({
           // Dispatch HIT_ASTEROID
           dispatchTrigger(TriggerId.HIT_ASTEROID, pState);
 
+          // Trigger dynamic colored rock/ice burst explosion
+          const astExplColor = ast.type === 'metallic' ? '#ff4d4d' : ast.type === 'ice' ? '#ffd32a' : '#ffa500';
+          const astExplCount = ast.size === 'large' ? 65 : ast.size === 'medium' ? 40 : 20;
+          triggerExplosion(ast.pos, astExplColor, astExplCount);
+
           if (pState.integrity <= 0) {
             hitDestroyedShip = true
             dispatchTrigger(TriggerId.PROBE_DEATH, pState);
@@ -587,6 +609,8 @@ export function usePhysicsLoop({
     selfDestructTimeoutRef,
     handleSelfDestruct,
     logs,
-    setLogs
+    setLogs,
+    explosions,
+    handleExplosionComplete
   }
 }

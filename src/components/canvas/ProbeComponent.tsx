@@ -59,127 +59,129 @@ export function ProbeComponent({ probe, gameState, planets }: ProbeComponentProp
       )}
 
       {/* Hoverable Main Probe Group positioned at probe.pos */}
-      <group 
-        position={probe.pos}
-        onPointerOver={(e) => {
-          e.stopPropagation()
-          setHovered(true)
-        }}
-        onPointerOut={(e) => {
-          e.stopPropagation()
-          setHovered(false)
-        }}
-      >
-        {/* Dynamic searchlight / headlight that travels with the probe to illuminate nearby planets and hazards */}
-        <pointLight
-          position={[0, 0.5, 0]} // slightly raised to cast beautiful oblique shadows on craters and terrain relief
-          intensity={8.0}
-          distance={32.0}
-          decay={1.5}
-          color="#dcf6ff" // Crisp cool white headlight
-        />
-
-        {/* Main Probe Body — Polished reflective chrome sphere */}
-        <mesh>
-          <sphereGeometry args={[0.38, 32, 32]} />
-          <meshStandardMaterial
-            color="#ffffff"
-            roughness={0.05}
-            metalness={0.95}
-            emissive={probeColor}
-            emissiveIntensity={0.15}
+      {probe.integrity > 0 && (
+        <group 
+          position={probe.pos}
+          onPointerOver={(e) => {
+            e.stopPropagation()
+            setHovered(true)
+          }}
+          onPointerOut={(e) => {
+            e.stopPropagation()
+            setHovered(false)
+          }}
+        >
+          {/* Dynamic searchlight / headlight that travels with the probe to illuminate nearby planets and hazards */}
+          <pointLight
+            position={[0, 0.5, 0]} // slightly raised to cast beautiful oblique shadows on craters and terrain relief
+            intensity={8.0}
+            distance={32.0}
+            decay={1.5}
+            color="#dcf6ff" // Crisp cool white headlight
           />
-        </mesh>
 
-        {/* Telemetry Sensor Ring — Solid glass sensor ring */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.5, 0.62, 32]} />
-          <meshStandardMaterial
-            color={probeColor}
-            transparent
-            opacity={0.4}
-            roughness={0.1}
-            metalness={0.8}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-
-        {/* Magnet collection range ring indicator */}
-        {probe.magnetRadius > 0 && (
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
-            <ringGeometry args={[probe.magnetRadius - 0.04, probe.magnetRadius + 0.04, 64]} />
-            <meshStandardMaterial
-              color="#a0a0ff"
-              transparent
-              opacity={0.35}
-              roughness={0.2}
-              metalness={0.9}
-              emissive="#7070ff"
-              emissiveIntensity={1.2}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
-        )}
-
-        {/* Active Translucent Glowing Plasma Shield Bubble Mesh */}
-        {probe.shieldDuration > 0 && probe.shieldLevel > 0 && (
+          {/* Main Probe Body — Polished reflective chrome sphere */}
           <mesh>
-            <sphereGeometry args={[0.55, 32, 32]} />
+            <sphereGeometry args={[0.38, 32, 32]} />
             <meshStandardMaterial
-              color="#00e5ff"
+              color="#ffffff"
+              roughness={0.05}
+              metalness={0.95}
+              emissive={probeColor}
+              emissiveIntensity={0.15}
+            />
+          </mesh>
+
+          {/* Telemetry Sensor Ring — Solid glass sensor ring */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.5, 0.62, 32]} />
+            <meshStandardMaterial
+              color={probeColor}
               transparent
-              opacity={0.35}
-              roughness={0.15}
-              metalness={0.1}
-              emissive="#00e5ff"
-              emissiveIntensity={1.8}
+              opacity={0.4}
+              roughness={0.1}
+              metalness={0.8}
               side={THREE.DoubleSide}
             />
           </mesh>
-        )}
 
-        {/* Immersive 3D Tooltip Overlay */}
-        {hovered && (
-          <Html position={[0, 0.8, 0]} center style={{ pointerEvents: 'none' }}>
-            <div className="tooltip-card">
-              <span className="badge data" style={{ background: 'rgba(0, 229, 255, 0.15)', color: '#00e5ff', borderColor: '#00e5ff' }}>
-                TELEMETRY PROBE
-              </span>
-              {isInsideAtmosphere && (
-                <span className="badge hazard" style={{ background: 'rgba(0, 255, 157, 0.15)', color: 'var(--glow-green)', borderColor: 'var(--glow-green)', marginLeft: '6px' }}>
-                  10x ACCEL
+          {/* Magnet collection range ring indicator */}
+          {probe.magnetRadius > 0 && (
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
+              <ringGeometry args={[probe.magnetRadius - 0.04, probe.magnetRadius + 0.04, 64]} />
+              <meshStandardMaterial
+                color="#a0a0ff"
+                transparent
+                opacity={0.35}
+                roughness={0.2}
+                metalness={0.9}
+                emissive="#7070ff"
+                emissiveIntensity={1.2}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+          )}
+
+          {/* Active Translucent Glowing Plasma Shield Bubble Mesh */}
+          {probe.shieldDuration > 0 && probe.shieldLevel > 0 && (
+            <mesh>
+              <sphereGeometry args={[0.55, 32, 32]} />
+              <meshStandardMaterial
+                color="#00e5ff"
+                transparent
+                opacity={0.35}
+                roughness={0.15}
+                metalness={0.1}
+                emissive="#00e5ff"
+                emissiveIntensity={1.8}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+          )}
+
+          {/* Immersive 3D Tooltip Overlay */}
+          {hovered && (
+            <Html position={[0, 0.8, 0]} center style={{ pointerEvents: 'none' }}>
+              <div className="tooltip-card">
+                <span className="badge data" style={{ background: 'rgba(0, 229, 255, 0.15)', color: '#00e5ff', borderColor: '#00e5ff' }}>
+                  TELEMETRY PROBE
                 </span>
-              )}
-              <h4>HARVEST PROBE</h4>
-              <div><strong>Status:</strong> {gameState}</div>
-              <div><strong>Velocity:</strong> {(new THREE.Vector3(probe.vel.x, 0, probe.vel.z).length() * 10).toFixed(1)} km/s</div>
-              <div><strong>Telemetry Data:</strong> {probe.data.toFixed(0)} Collected</div>
-              <div><strong>Magnet Radius:</strong> {probe.magnetRadius.toFixed(1)} km</div>
-              {probe.shieldDuration > 0 && probe.shieldLevel > 0 && (
-                <div style={{ color: '#00e5ff', fontWeight: 'bold', marginTop: '2px' }}>
-                  <strong>Plasma Shield:</strong> {probe.shieldLevel} SP ({probe.shieldDuration.toFixed(1)}s)
-                </div>
-              )}
-              
-              {isInsideAtmosphere && (
-                <div style={{
-                  color: 'var(--glow-green)',
-                  fontWeight: 'bold',
-                  fontSize: '9.5px',
-                  marginTop: '5px',
-                  textShadow: '0 0 4px rgba(0, 255, 157, 0.5)'
-                }}>
-                  ⚡ ATMOSPHERIC HARVEST ACTIVE (10x!)
-                </div>
-              )}
+                {isInsideAtmosphere && (
+                  <span className="badge hazard" style={{ background: 'rgba(0, 255, 157, 0.15)', color: 'var(--glow-green)', borderColor: 'var(--glow-green)', marginLeft: '6px' }}>
+                    10x ACCEL
+                  </span>
+                )}
+                <h4>HARVEST PROBE</h4>
+                <div><strong>Status:</strong> {gameState}</div>
+                <div><strong>Velocity:</strong> {(new THREE.Vector3(probe.vel.x, 0, probe.vel.z).length() * 10).toFixed(1)} km/s</div>
+                <div><strong>Telemetry Data:</strong> {probe.data.toFixed(0)} Collected</div>
+                <div><strong>Magnet Radius:</strong> {probe.magnetRadius.toFixed(1)} km</div>
+                {probe.shieldDuration > 0 && probe.shieldLevel > 0 && (
+                  <div style={{ color: '#00e5ff', fontWeight: 'bold', marginTop: '2px' }}>
+                    <strong>Plasma Shield:</strong> {probe.shieldLevel} SP ({probe.shieldDuration.toFixed(1)}s)
+                  </div>
+                )}
+                
+                {isInsideAtmosphere && (
+                  <div style={{
+                    color: 'var(--glow-green)',
+                    fontWeight: 'bold',
+                    fontSize: '9.5px',
+                    marginTop: '5px',
+                    textShadow: '0 0 4px rgba(0, 255, 157, 0.5)'
+                  }}>
+                    ⚡ ATMOSPHERIC HARVEST ACTIVE (10x!)
+                  </div>
+                )}
 
-              <div style={{ marginTop: '5px', color: 'var(--chrome-dim)', fontSize: '10px' }}>
-                Collects telemetry data over time while in flight. Watch fuel reserves and gravitational corridors!
+                <div style={{ marginTop: '5px', color: 'var(--chrome-dim)', fontSize: '10px' }}>
+                  Collects telemetry data over time while in flight. Watch fuel reserves and gravitational corridors!
+                </div>
               </div>
-            </div>
-          </Html>
-        )}
-      </group>
+            </Html>
+          )}
+        </group>
+      )}
     </group>
   )
 }
