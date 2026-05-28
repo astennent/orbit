@@ -70,3 +70,10 @@ export const getBannerMessage = (gameState: GameState, probeData: number, sector
   }
   return null
 }
+
+// Dynamically scale beacon colors from Light Blue (10) to Green (50)
+export function getBeaconColor(value: number): string {
+  const t = Math.max(0, Math.min(1, (value - 10) / 40)); // 40 is 50 - 10
+  const h = 200 - t * 80; // Hue shifts from 200 (light blue) to 120 (green)
+  return `hsl(${h.toFixed(0)}, 100%, 50%)`;
+}

@@ -157,17 +157,18 @@ export function generateBeacons(planets: Planet[]): Beacon[] {
         attempts++;
       }
 
+      const randomValue = 35 + Math.floor(Math.random() * 4) * 5; // 35 to 50 inclusive (35, 40, 45, 50)
       points.push({
         id: `dp-planet-${planet.id}-${i}`,
         pos: dpPos.clone(),
         radius: 0.52, // slightly larger for visibility
-        value: 30, // worth more!
+        value: randomValue,
         collected: false
       });
     }
   }
 
-  // 2. Scattered Deep Space Beacons (many scattered in void, worth 12 each)
+  // 2. Scattered Deep Space Beacons (many scattered in void, worth 10 to 25, divisible by 5)
   for (let i = 0; i < 30; i++) {
     let dpPos = new THREE.Vector3();
     let attempts = 0;
@@ -189,11 +190,12 @@ export function generateBeacons(planets: Planet[]): Beacon[] {
       attempts++;
     }
 
+    const randomValue = 10 + Math.floor(Math.random() * 4) * 5; // 10 to 25 inclusive (10, 15, 20, 25)
     points.push({
       id: `dp-space-${i}`,
       pos: dpPos.clone(),
       radius: 0.38, // slightly smaller
-      value: 12, // worth less!
+      value: randomValue,
       collected: false
     });
   }

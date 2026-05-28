@@ -10,6 +10,7 @@ import { TrajectoryLine } from './TrajectoryLine'
 import { AsteroidComponent } from './AsteroidComponent'
 import { Nebula } from './Nebula'
 import { LAUNCH_SPEED_MULTIPLIER, OUT_OF_BOUNDS_LIMIT } from '../../constants'
+import { getBeaconColor } from '../../utils/statusFormatters'
 
 interface CameraControllerProps {
   probe: Probe
@@ -90,7 +91,7 @@ function CameraController({ probe, gameState }: CameraControllerProps) {
         const moveDir = new THREE.Vector3(dx, 0, dz).normalize().multiplyScalar(moveSpeed * delta)
         wasdOffset.current.add(moveDir)
       }
-      
+
       targetCenter.copy(wasdOffset.current)
     }
 
@@ -109,6 +110,84 @@ function CameraController({ probe, gameState }: CameraControllerProps) {
   })
 
   return null
+}
+
+interface BeaconComponentProps {
+  beacon: Beacon
+  isHovered: boolean
+  setHoveredBeaconId: (id: string | null) => void
+}
+
+function BeaconComponent({ beacon: b, isHovered, setHoveredBeaconId }: BeaconComponentProps) {
+  const color = getBeaconColor(b.value)
+
+  return (
+    <group
+      position={b.pos}
+      onPointerOver={(e) => {
+        e.stopPropagation()
+        setHoveredBeaconId(b.id)
+      }}
+      onPointerOut={(e) => {
+        e.stopPropagation()
+        setHoveredBeaconId(null)
+      }}
+    >
+      {/* Outer translucent glass capsule shell */}
+      <mesh>
+        <sphereGeometry args={[b.radius * 0.95, 32, 32]} />
+        <meshStandardMaterial
+          color={color}
+          transparent
+          opacity={0.25}
+          roughness={0.02}
+          metalness={0.0}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Solid nucleus core */}
+      <mesh>
+        <sphereGeometry args={[b.radius * 0.42, 32, 32]} />
+        <meshStandardMaterial
+          color={color}
+          roughness={0.05}
+          metalness={0.95}
+          emissive={color}
+          emissiveIntensity={0.8}
+        />
+      </mesh>
+
+      {/* Thin chrome equator ring */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[b.radius * 0.9, b.radius * 0.98, 32]} />
+        <meshStandardMaterial
+          color={color}
+          roughness={0.05}
+          metalness={0.95}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Dynamic scaled Hover Tooltip overlay */}
+      {isHovered && (
+        <Html position={[0, b.radius + 1.8, 0]} center style={{ pointerEvents: 'none' }}>
+          <div className="tooltip-card" style={{ borderColor: color, boxShadow: `0 10px 30px rgba(0,0,0,0.8), 0 0 20px ${color}40` }}>
+            <span className="badge data" style={{ background: color, color: '#000', textShadow: 'none', fontWeight: 'bold' }}>
+              {b.value >= 35 ? 'PLANETARY BEACON' : 'DEEP SPACE BEACON'}
+            </span>
+            <h4>DATA BEACON</h4>
+            <div><strong>Value:</strong> +{b.value} Data</div>
+            <div style={{ marginTop: '5px', color: 'var(--chrome-dim)', fontSize: '10px' }}>
+              {b.value >= 35
+                ? 'High-density beacon trapped inside the gravity well. High risk, high telemetry capture!'
+                : 'Low-density telemetry node drifting safely in the void.'}
+            </div>
+          </div>
+        </Html>
+      )}
+    </group>
+  )
 }
 
 interface GameCanvasProps {
@@ -152,8 +231,8 @@ export function GameCanvas({
   const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
     if (gameState !== 'IDLE' && gameState !== 'LAUNCHING') return
     e.stopPropagation()
-    // Capture the pointer to receive events even outside the canvas boundaries
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+      // Capture the pointer to receive events even outside the canvas boundaries
+      ; (e.target as HTMLElement).setPointerCapture(e.pointerId)
     onAimStart(e.point)
   }
 
@@ -168,7 +247,7 @@ export function GameCanvas({
   const handlePointerUp = (e: ThreeEvent<PointerEvent>) => {
     if (!aimActive) return
     e.stopPropagation()
-    ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
+      ; (e.target as HTMLElement).releasePointerCapture(e.pointerId)
     onAimRelease()
   }
 
@@ -183,7 +262,7 @@ export function GameCanvas({
       const z = (Math.random() - 0.5) * radius * 2
       // Position them below the gameplay plane (Y depth) to form a true background starfield
       const y = -12.0 - Math.random() * 25.0
-      
+
       coords.push(x, y, z)
     }
     return new Float32Array(coords)
@@ -215,7 +294,7 @@ export function GameCanvas({
       const segLength = (length / activeCount) * 0.45
       const distance = (i + 0.5) * (length / activeCount)
       const pos = aimStartPos.clone().addScaledVector(dir, distance)
-      
+
       // Sleeker flared widths for a tighter, more precise wedge profile
       const width = 0.16 + i * 0.085
 
@@ -331,76 +410,17 @@ export function GameCanvas({
           )}
         </group>
 
-        {/* Floating Beacons — Glossy glass bubbles with golden/cyan nuclei */}
+        {/* Floating Beacons — Circled flat numbers (laid coin) */}
         {beacons.map(b => {
           if (b.collected) return null
-          const isHighValue = b.value >= 25
           const isHovered = hoveredBeaconId === b.id
           return (
-            <group 
-              key={b.id} 
-              position={b.pos}
-              onPointerOver={(e) => {
-                e.stopPropagation()
-                setHoveredBeaconId(b.id)
-              }}
-              onPointerOut={(e) => {
-                e.stopPropagation()
-                setHoveredBeaconId(null)
-              }}
-            >
-              {/* Outer translucent glass capsule shell */}
-              <mesh>
-                <sphereGeometry args={[b.radius * 0.95, 32, 32]} />
-                <meshStandardMaterial
-                  color={isHighValue ? "#2ed573" : "#a0d8ef"}
-                  transparent
-                  opacity={isHighValue ? 0.32 : 0.22}
-                  roughness={0.02}
-                  metalness={0.0}
-                  side={THREE.DoubleSide}
-                />
-              </mesh>
-              {/* Solid golden/pink or cyan nucleus core */}
-              <mesh>
-                <sphereGeometry args={[b.radius * 0.42, 32, 32]} />
-                <meshStandardMaterial
-                  color={isHighValue ? "#00ff66" : "#00ffcc"}
-                  roughness={0.05}
-                  metalness={0.95}
-                  emissive={isHighValue ? "#00ff20" : "#00aaff"}
-                  emissiveIntensity={isHighValue ? 0.65 : 0.45}
-                />
-              </mesh>
-              {/* Thin chrome equator ring */}
-              <mesh rotation={[-Math.PI / 2, 0, 0]}>
-                <ringGeometry args={[b.radius * 0.9, b.radius * 0.98, 32]} />
-                <meshStandardMaterial
-                  color={isHighValue ? "#2ed573" : "#e0e0e0"}
-                  roughness={0.05}
-                  metalness={0.95}
-                  side={THREE.DoubleSide}
-                />
-              </mesh>
-
-              {/* Floating Immersive 3D Tooltip Overlay */}
-              {isHovered && (
-                <Html position={[0, b.radius + 1.8, 0]} center style={{ pointerEvents: 'none' }}>
-                  <div className="tooltip-card">
-                    <span className={`badge data ${isHighValue ? 'hazard' : ''}`}>
-                      {isHighValue ? 'PLANETARY BEACON' : 'DEEP SPACE BEACON'}
-                    </span>
-                    <h4>BEACON</h4>
-                    <div><strong>Value:</strong> +{b.value} Data</div>
-                    <div style={{ marginTop: '5px', color: 'var(--chrome-dim)', fontSize: '10px' }}>
-                      {isHighValue
-                        ? 'High-density beacon trapped inside the gravity well. High risk, high telemetry capture!'
-                        : 'Low-density telemetry node drifting safely in the void.'}
-                    </div>
-                  </div>
-                </Html>
-              )}
-            </group>
+            <BeaconComponent
+              key={b.id}
+              beacon={b}
+              isHovered={isHovered}
+              setHoveredBeaconId={setHoveredBeaconId}
+            />
           )
         })}
 
@@ -465,11 +485,11 @@ export function GameCanvas({
         {toasts.map(toast => (
           <group key={toast.id} position={toast.pos}>
             <Html center>
-              <div 
+              <div
                 className="data-toast"
                 style={{
                   color: toast.color || 'var(--glow-green)',
-                  textShadow: toast.color 
+                  textShadow: toast.color
                     ? `0 0 6px ${toast.color}, 0 0 12px ${toast.color}60`
                     : '0 0 6px rgba(0, 255, 157, 0.8), 0 0 12px rgba(0, 255, 157, 0.4)'
                 }}

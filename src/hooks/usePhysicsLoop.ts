@@ -4,6 +4,7 @@ import { Probe, Planet, ExitPortal, Beacon, Asteroid, DataToast, GameState, Modu
 import { UPGRADE_REGISTRY, MODULES_REGISTRY, HACKS_REGISTRY } from '../constants/upgrades'
 import { handleTrigger, executeModuleEffect } from '../utils/moduleEffects'
 import { createFreshProbe, applyDamage } from '../utils/probeUtils'
+import { getBeaconColor } from '../utils/statusFormatters'
 import {
   GRAVITATIONAL_CONSTANT,
   ATMOSPHERE_DRAG,
@@ -437,8 +438,7 @@ export function usePhysicsLoop({
           dataUpdated = true
           const addedData = dp.value;
           pState.data += addedData;
-          const isHighValue = dp.value >= 25;
-          const color = isHighValue ? '#00ff66' : '#00ffcc';
+          const color = getBeaconColor(addedData);
           triggerDataToast(`+${addedData.toFixed(0)} Data`, dp.pos, color);
 
           // Dispatch HIT_BEACON
