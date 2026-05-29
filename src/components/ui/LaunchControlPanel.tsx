@@ -11,7 +11,7 @@ export const LaunchControlPanel: React.FC<LaunchControlPanelProps> = ({
 }) => {
   const isDataQuotaMet = probeData >= sectorQuota
   const harvested = Math.floor(probeData)
-  const multiplier = (harvested / sectorQuota).toFixed(1)
+  const multiplier = Math.floor(probeData / sectorQuota).toFixed(0)
 
   return (
     <div style={{
