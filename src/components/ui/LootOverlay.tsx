@@ -70,10 +70,10 @@ export const LootOverlay: React.FC<LootOverlayProps> = ({
         </div>
 
         {/* Central visual panel */}
-        <div style={{ display: 'flex', gap: '20px', margin: '15px 0' }}>
+        <div style={{ display: 'flex', gap: '20px', margin: '8px 0' }}>
 
           {/* Salvaged Modules Shelf Cabinet */}
-          <div className="loot-cabinet" style={{ height: '240px' }}>
+          <div className="loot-cabinet" style={{ height: '185px' }}>
             <div className="loot-shelf-container">
               <div className="loot-shelf-label font-orbitron">SALVAGED HULL DEBRIS MODULES (DRAG TO ACTIVE SLOTS)</div>
               <div className="loot-shelf-metal-beam">
@@ -81,7 +81,7 @@ export const LootOverlay: React.FC<LootOverlayProps> = ({
                   pendingLoot.modules.map((modId, idx) => {
                     const upgrade = UPGRADE_REGISTRY[modId];
                     return (
-                      <div key={`loot-mod-${idx}`} className="storefront-slot-wrapper" style={{ width: '130px' }}>
+                      <div key={`loot-mod-${idx}`} className="storefront-slot-wrapper" style={{ width: '115px' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', width: '100%', position: 'relative' }}>
                           <div
                             className="shop-cartridge draggable loot-cartridge"
@@ -147,7 +147,7 @@ export const LootOverlay: React.FC<LootOverlayProps> = ({
           </div>
 
           {/* Holographic Scanner Readout */}
-          <div className="scanner-readout-panel" style={{ height: '240px', borderColor: 'rgba(255, 0, 255, 0.3)', boxShadow: '0 0 20px rgba(0,0,0,0.8), 0 0 12px rgba(255, 0, 255, 0.1), inset 0 0 15px rgba(255, 0, 255, 0.05)' }}>
+          <div className="scanner-readout-panel" style={{ height: '185px', borderColor: 'rgba(255, 0, 255, 0.3)', boxShadow: '0 0 20px rgba(0,0,0,0.8), 0 0 12px rgba(255, 0, 255, 0.1), inset 0 0 15px rgba(255, 0, 255, 0.05)' }}>
             <h3 className="font-orbitron" style={{ color: '#ff00ff', borderBottomColor: 'rgba(255, 0, 255, 0.15)', textShadow: '0 0 8px rgba(255, 0, 255, 0.3)' }}>
               Salvage Scanner
             </h3>
@@ -324,7 +324,12 @@ export const LootOverlay: React.FC<LootOverlayProps> = ({
               pendingLoot.hacks.map((hackId, idx) => {
                 const hack = UPGRADE_REGISTRY[hackId];
                 return (
-                  <div key={`loot-hack-${idx}`} className="loot-hack-card animated-scan" style={{ borderColor: hack.color }}>
+                  <div
+                    key={`loot-hack-${idx}`}
+                    className="loot-hack-card animated-scan"
+                    onClick={() => onCollectHack(hackId, idx)}
+                    style={{ borderColor: hack.color, cursor: 'pointer' }}
+                  >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${hack.color}30`, paddingBottom: '6px', marginBottom: '6px' }}>
                       <span className="font-orbitron font-weight-bold" style={{ color: hack.color, fontSize: '12px' }}>
                         {hack.short} {hack.name.toUpperCase()}
@@ -334,23 +339,6 @@ export const LootOverlay: React.FC<LootOverlayProps> = ({
                     <div style={{ fontSize: '10px', color: '#e0e0e0', lineHeight: '1.3', flex: 1, minHeight: '30px' }}>
                       {hack.desc}
                     </div>
-                    <button
-                      className="btn-arcade success font-orbitron collect-hack-btn"
-                      onClick={() => onCollectHack(hackId, idx)}
-                      style={{
-                        fontSize: '9px',
-                        padding: '4px 10px',
-                        borderRadius: '4px',
-                        marginTop: '8px',
-                        width: '100%',
-                        cursor: 'pointer',
-                        borderColor: '#ff00ff',
-                        background: 'linear-gradient(to bottom, #da70d6 0%, #ba55d3 100%)',
-                        boxShadow: '0 0 6px rgba(255, 0, 255, 0.3)'
-                      }}
-                    >
-                      COLLECT (FREE)
-                    </button>
                   </div>
                 );
               })
