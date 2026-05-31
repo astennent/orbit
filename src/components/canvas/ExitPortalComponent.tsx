@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
@@ -11,25 +11,176 @@ interface ExitPortalComponentProps {
 export function ExitPortalComponent({ portal }: ExitPortalComponentProps) {
   const outerHexRef = useRef<THREE.Mesh>(null!)
   const innerGlowRef = useRef<THREE.Mesh>(null!)
+  const innerDiskRef = useRef<THREE.Mesh>(null!)
+  const outerDiskRef = useRef<THREE.Mesh>(null!)
+  
+  const pointsGeomRef = useRef<THREE.BufferGeometry>(null)
   const [hovered, setHovered] = useState<boolean>(false)
+
+  // Pre-calculate Keplerian particle parameters in useMemo for maximum performance
+  const particlesData = useMemo(() => {
+    const count = 120
+    const angles = new Float32Array(count)
+    const radii = new Float32Array(count)
+    const speeds = new Float32Array(count)
+    const drifts = new Float32Array(count)
+    const waves = new Float32Array(count * 2) // [frequency, amplitude]
+    const colors = new Float32Array(count * 3) // [R, G, B]
+    
+    const portalRad = portal.radius
+    
+    for (let i = 0; i < count; i++) {
+      angles[i] = Math.random() * Math.PI * 2
+      radii[i] = portalRad * (0.3 + Math.random() * 2.2)
+      
+      // Keplerian orbit speed: faster near core, slower far out
+      const baseSpeed = 1.6 / (radii[i] + 0.1)
+      speeds[i] = baseSpeed * (0.85 + Math.random() * 0.3)
+      
+      // Inward radial suction drift speed
+      drifts[i] = portalRad * (0.15 + Math.random() * 0.25)
+      
+      // Wave parameters for vertical Y waving
+      waves[i * 2] = 2.0 + Math.random() * 4.0 // frequency
+      waves[i * 2 + 1] = 0.05 + Math.random() * 0.07 // amplitude
+      
+      // High-fidelity color palette: gold, magenta, electric cyan
+      const colorType = Math.random()
+      if (colorType < 0.45) {
+        // Space Gold
+        colors[i * 3] = 1.0     // R
+        colors[i * 3 + 1] = 0.82 // G
+        colors[i * 3 + 2] = 0.05 // B
+      } else if (colorType < 0.78) {
+        // Cosmic Magenta / Pink
+        colors[i * 3] = 0.95    // R
+        colors[i * 3 + 1] = 0.0  // G
+        colors[i * 3 + 2] = 0.95 // B
+      } else {
+        // Electric Plasma Cyan
+        colors[i * 3] = 0.0     // R
+        colors[i * 3 + 1] = 0.88 // G
+        colors[i * 3 + 2] = 1.0  // B
+      }
+    }
+    return { count, angles, radii, speeds, drifts, waves, colors }
+  }, [portal.radius])
+
+  const anglesRef = useRef<Float32Array>(particlesData.angles)
+  const radiiRef = useRef<Float32Array>(particlesData.radii)
+
+  // Keep references updated on level updates
+  useEffect(() => {
+    anglesRef.current = particlesData.angles
+    radiiRef.current = particlesData.radii
+  }, [particlesData])
+
+  // Setup points geometry attributes imperatively on load/level change to guarantee rendering
+  useEffect(() => {
+    if (pointsGeomRef.current) {
+      const geom = pointsGeomRef.current
+      geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(particlesData.count * 3), 3))
+      geom.setAttribute('color', new THREE.BufferAttribute(particlesData.colors, 3))
+    }
+  }, [particlesData])
 
   useFrame(({ clock }) => {
     const elapsed = clock.getElapsedTime()
     
-    // Rotating outer ring
+    // Hexagonal deck rotations
     if (outerHexRef.current) {
       outerHexRef.current.rotation.z = elapsed * 0.4
     }
-    
-    // Pulsing inner glow scale
     if (innerGlowRef.current) {
       const scale = 1.0 + Math.sin(elapsed * 4.0) * 0.08
       innerGlowRef.current.scale.set(scale, scale, 1)
+    }
+
+    // Counter-rotating accretion halo layers
+    if (innerDiskRef.current) {
+      innerDiskRef.current.rotation.z = elapsed * 0.6
+    }
+    if (outerDiskRef.current) {
+      outerDiskRef.current.rotation.z = -elapsed * 0.35
+    }
+
+    // Swirling inward cosmic telemetry dust particles
+    if (pointsGeomRef.current) {
+      const geom = pointsGeomRef.current
+      const posAttr = geom.getAttribute('position')
+      const count = particlesData.count
+      
+      const angles = anglesRef.current
+      const radii = radiiRef.current
+      
+      const dt = 0.016 // Keep motion consistent and hitch-free
+      const portalRad = portal.radius
+
+      for (let i = 0; i < count; i++) {
+        angles[i] += particlesData.speeds[i] * dt
+        radii[i] -= particlesData.drifts[i] * dt
+
+        // Recycle particles reaching the center back to far boundaries
+        if (radii[i] < portalRad * 0.22) {
+          radii[i] = portalRad * (1.5 + Math.random() * 1.0)
+          angles[i] = Math.random() * Math.PI * 2
+        }
+
+        const px = radii[i] * Math.cos(angles[i])
+        const pz = radii[i] * Math.sin(angles[i])
+
+        // Vertical Y fluctuation
+        const waveFreq = particlesData.waves[i * 2]
+        const waveAmp = particlesData.waves[i * 2 + 1]
+        const py = Math.sin(radii[i] * waveFreq - elapsed * 5.0) * waveAmp
+
+        posAttr.setXYZ(i, px, py, pz)
+      }
+      posAttr.needsUpdate = true
     }
   })
 
   return (
     <group position={portal.pos}>
+      {/* Swirling Accretion Disk - Clockwise Inner Gold Halo */}
+      <mesh ref={innerDiskRef} position={[0, -0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[portal.radius * 0.42, portal.radius * 1.2, 64]} />
+        <meshBasicMaterial
+          color="#ffd700"
+          transparent
+          opacity={0.16}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Swirling Accretion Disk - Counter-Clockwise Outer Magenta Halo */}
+      <mesh ref={outerDiskRef} position={[0, -0.06, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[portal.radius * 0.75, portal.radius * 1.8, 64]} />
+        <meshBasicMaterial
+          color="#ff00ff"
+          transparent
+          opacity={0.10}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Cosmic Telemetry Dust Spirals */}
+      <points>
+        <bufferGeometry ref={pointsGeomRef} />
+        <pointsMaterial
+          vertexColors
+          size={0.11}
+          transparent
+          opacity={0.35}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </points>
+
       {/* Outer Hexagonal Solid Gold Ring */}
       <mesh ref={outerHexRef} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[portal.radius * 0.85, portal.radius, 6]} />
