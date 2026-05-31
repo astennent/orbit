@@ -89,8 +89,8 @@ export function usePhysicsLoop({
   // Timers for active timed hacks
   const oscillatorTimerRef = useRef(1.0)
   const metronomeTimerRef = useRef(3.0)
-  const threeSecondTimerRef = useRef(3.0)
-  const twoSecondTimerRef = useRef(2.0)
+  const slotTimersRef = useRef<number[]>([0, 0, 0, 0, 0, 0])
+  const slotTimersInitializedRef = useRef<boolean>(false)
   const flightTimeRef = useRef<number>(0)
 
   const triggerDataToast = (text: string, pos: THREE.Vector3, color?: string) => {
@@ -250,8 +250,7 @@ export function usePhysicsLoop({
     if (gameState !== 'FLIGHT') {
       rocketsRef.current = [];
       setRockets([]);
-      threeSecondTimerRef.current = 3.0;
-      twoSecondTimerRef.current = 2.0;
+      slotTimersInitializedRef.current = false;
       return;
     }
 
@@ -270,17 +269,42 @@ export function usePhysicsLoop({
       // Increment flight time since launch
       flightTimeRef.current += PHYSICS_DT
 
-      // Decrement Auto Turret timers
-      threeSecondTimerRef.current -= PHYSICS_DT
-      if (threeSecondTimerRef.current <= 0) {
-        threeSecondTimerRef.current = 3.0
-        dispatchTrigger(TriggerId.EVERY_3_SECONDS, pState)
+      // 0. Initialize slot-specific timers for time-based modules with 0.1s offset delay per socket
+      if (!slotTimersInitializedRef.current) {
+        for (let slotIdx = 0; slotIdx < 6; slotIdx++) {
+          const moduleId = activeModulesRef.current[slotIdx]
+          if (moduleId) {
+            const upgrade = UPGRADE_REGISTRY[moduleId]
+            const offset = 0.1 * (slotIdx + 1)
+            if (upgrade.triggerId === TriggerId.EVERY_3_SECONDS) {
+              slotTimersRef.current[slotIdx] = 3.0 + offset
+            } else if (upgrade.triggerId === TriggerId.EVERY_2_SECONDS) {
+              slotTimersRef.current[slotIdx] = 2.0 + offset
+            } else {
+              slotTimersRef.current[slotIdx] = 0
+            }
+          } else {
+            slotTimersRef.current[slotIdx] = 0
+          }
+        }
+        slotTimersInitializedRef.current = true
       }
 
-      twoSecondTimerRef.current -= PHYSICS_DT
-      if (twoSecondTimerRef.current <= 0) {
-        twoSecondTimerRef.current = 2.0
-        dispatchTrigger(TriggerId.EVERY_2_SECONDS, pState)
+      // Decrement slot-specific timers for periodic modules
+      for (let slotIdx = 0; slotIdx < 6; slotIdx++) {
+        const moduleId = activeModulesRef.current[slotIdx]
+        if (!moduleId) continue
+
+        const upgrade = UPGRADE_REGISTRY[moduleId]
+        if (upgrade.triggerId === TriggerId.EVERY_3_SECONDS || upgrade.triggerId === TriggerId.EVERY_2_SECONDS) {
+          slotTimersRef.current[slotIdx] -= PHYSICS_DT
+          if (slotTimersRef.current[slotIdx] <= 0) {
+            const period = upgrade.triggerId === TriggerId.EVERY_3_SECONDS ? 3.0 : 2.0
+            slotTimersRef.current[slotIdx] = period
+            console.log(`[Time-Based Module Trigger] Slot ${slotIdx + 1} (${moduleId}) Triggered with delay offset!`)
+            executeModuleEffect(slotIdx, moduleId, pState, { triggerDataToast, sectorQuota, spawnRocket })
+          }
+        }
       }
 
       // 1. Gravity Integration
