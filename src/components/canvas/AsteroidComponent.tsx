@@ -85,9 +85,7 @@ export function AsteroidComponent({ asteroid }: AsteroidComponentProps) {
   const geomArgs = [asteroid.radius, 1] as [number, number]
 
   const getDamageValue = () => {
-    const baseDamage = asteroid.type === 'ice' ? 3 : asteroid.type === 'carbon' ? 4 : 6
-    const multiplier = asteroid.size === 'large' ? 4 : asteroid.size === 'medium' ? 2 : 1
-    return baseDamage * multiplier
+    return Math.ceil(asteroid.health)
   }
 
   return (

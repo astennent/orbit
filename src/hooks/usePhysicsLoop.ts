@@ -604,10 +604,7 @@ export function usePhysicsLoop({
         if (astDiff.length() < ast.radius + 0.35) {
           asteroidsUpdated = true
 
-          const baseDamage = ast.type === 'ice' ? 3 : ast.type === 'carbon' ? 4 : 6
-          const sizeMult = ast.size === 'large' ? 4 : ast.size === 'medium' ? 2 : 1
-          const fraction = ast.health / 10
-          const finalDamage = Math.ceil(baseDamage * sizeMult * fraction)
+          const finalDamage = Math.ceil(ast.health)
 
           const tookHpDamage = applyDamage(pState, finalDamage, triggerDataToast);
 

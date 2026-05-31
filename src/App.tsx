@@ -386,7 +386,7 @@ export default function App() {
     beaconsRef.current = freshBeacons
     setBeacons(freshBeacons)
 
-    const freshAsteroids = asteroids.map(a => ({ ...a, health: 10 }))
+    const freshAsteroids = asteroids.map(a => ({ ...a, health: a.maxHealth }))
     asteroidsRef.current = freshAsteroids
     setAsteroids(freshAsteroids)
 

@@ -287,14 +287,18 @@ export function generateAsteroids(planets: Planet[], exitPortal: ExitPortal, bea
       attempts++;
     }
 
+    const baseDamage = type === 'ice' ? 3 : type === 'carbon' ? 4 : 6;
+    const sizeMult = size === 'large' ? 4 : size === 'medium' ? 2 : 1;
+    const initialHp = baseDamage * sizeMult;
+
     asteroids.push({
       id: `asteroid-${level}-${i}`,
       pos: pos.clone(),
       radius,
       type,
       size,
-      health: 10,
-      maxHealth: 10
+      health: initialHp,
+      maxHealth: initialHp
     });
   }
 
