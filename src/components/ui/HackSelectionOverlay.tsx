@@ -21,7 +21,7 @@ export const HackSelectionOverlay: React.FC<HackSelectionOverlayProps> = ({ onSe
   return (
     <div className="shop-modal" style={{ animation: 'modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
       <div className="shop-content glassmorphism" style={{ width: '700px', borderColor: 'var(--glow-cyan)', boxShadow: '0 20px 50px rgba(0,0,0,0.9), 0 0 35px rgba(0, 229, 255, 0.15)' }}>
-        
+
         {/* Upper Dashboard Terminal */}
         <div className="shop-hud-header" style={{ borderBottomColor: 'rgba(0, 229, 255, 0.15)' }}>
           <div className="shop-hud-panel">
@@ -29,28 +29,28 @@ export const HackSelectionOverlay: React.FC<HackSelectionOverlayProps> = ({ onSe
               FIRMWARE ALIGNMENT DECK
             </h2>
             <div className="font-script text-gold" style={{ fontSize: '15px' }}>
-              Splice one complimentary bypass into your system registers
+              Splice one complimentary hack into your system
             </div>
           </div>
           <div className="shop-hud-panel font-orbitron text-cyan wallet" style={{ borderColor: 'rgba(0, 229, 255, 0.25)', fontSize: '12px', padding: '6px 12px' }}>
-            SELECT ONE BYPASS (FREE)
+            SELECT ONE HACK (FREE)
           </div>
         </div>
 
         {/* Central visual panel */}
         <div style={{ display: 'flex', gap: '20px', margin: '25px 0 15px 0' }}>
-          
+
           {/* Cabinet displaying only the two complimentary choices */}
           <div className="storefront-cabinet" style={{ width: '380px', height: '240px', borderColor: 'rgba(0, 229, 255, 0.15)', justifyContent: 'center', gap: '5px' }}>
             <div className="shop-shelf">
               <div className="shelf-label font-orbitron" style={{ textAlign: 'center', marginBottom: '8px' }}>
-                AVAILABLE COCKPIT REGISTER SPLICINGS
+                AVAILABLE HACKS
               </div>
               <div className="shelf-metal-beam hacks-beam" style={{ borderBottomColor: '#d27d2d', minHeight: '160px', justifyContent: 'space-around', background: 'transparent' }}>
                 {choices.map((hack) => (
                   <div key={hack.id} className="storefront-slot-wrapper" style={{ width: '150px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', width: '100%' }}>
-                      <div 
+                      <div
                         className="shop-cartridge draggable"
                         onClick={() => onSelect(hack.id as HackId)}
                         onMouseEnter={() => setHoveredHack(hack)}
@@ -77,7 +77,7 @@ export const HackSelectionOverlay: React.FC<HackSelectionOverlayProps> = ({ onSe
                           <span style={{ background: hack.color }} />
                         </div>
                       </div>
-                      
+
                       <button
                         className="btn-arcade success font-orbitron"
                         onClick={() => onSelect(hack.id as HackId)}
@@ -102,7 +102,7 @@ export const HackSelectionOverlay: React.FC<HackSelectionOverlayProps> = ({ onSe
                 <div style={{ color: hoveredHack.color, fontSize: '13px', fontWeight: 'bold', borderBottom: `1.5px solid ${hoveredHack.color}`, paddingBottom: '4px', marginBottom: '8px' }}>
                   {hoveredHack.name.toUpperCase()}
                 </div>
-                <div className="readout-stat">FIRMWARE TYPE: <strong className="text-cyan">COCKPIT BYPASS</strong></div>
+                <div className="readout-stat">FIRMWARE TYPE: <strong className="text-cyan">HACK</strong></div>
                 <div className="readout-stat">PRICE: <strong className="text-green font-orbitron">0☉ (COMPLIMENTARY)</strong></div>
                 <p className="readout-desc" style={{ fontSize: '10.5px', lineHeight: '1.35', color: '#e8e8e8', borderTop: 'none', paddingTop: 0, marginTop: 0 }}>{hoveredHack.desc}</p>
                 {hoveredHack.blurb && (
@@ -115,7 +115,7 @@ export const HackSelectionOverlay: React.FC<HackSelectionOverlayProps> = ({ onSe
               <div className="readout-idle">
                 <div className="scanner-sweeper" style={{ background: 'linear-gradient(90deg, rgba(0,229,255,0) 0%, rgba(0,229,255,0.6) 50%, rgba(0,229,255,0) 100%)', boxShadow: '0 0 10px rgba(0,229,255,0.8)' }} />
                 <div style={{ color: 'var(--chrome-dim)', fontStyle: 'italic', fontSize: '11px', textAlign: 'center', marginTop: '35px' }}>
-                  SCANNING CHIPS...<br/>
+                  SCANNING CHIPS...<br />
                   <span style={{ fontSize: '9.5px', opacity: 0.6, display: 'block', marginTop: '10px' }}>HOVER OVER CARTRIDGE TO RUN FIRMWARE ANALYSIS</span>
                 </div>
               </div>

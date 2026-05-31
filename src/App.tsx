@@ -276,6 +276,15 @@ export default function App() {
     })
   }
 
+  // Discard a currently equipped module from the player slots
+  const handleDiscardEquippedModule = (slotIndex: number) => {
+    setModuleSlots(prev => {
+      const next = [...prev]
+      next[slotIndex] = null
+      return next
+    })
+  }
+
   // Collect a hack salvaged from an asteroid
   const handleCollectHack = (hackId: HackId, lootIndex: number) => {
     setHackSlots(prev => [...prev, hackId])
@@ -514,6 +523,7 @@ export default function App() {
           moduleSlots={moduleSlots}
           onEquipModule={handleEquipLootModule}
           onRearrangeModules={handleRearrangeModules}
+          onDiscardEquippedModule={handleDiscardEquippedModule}
           onCollectHack={handleCollectHack}
           onClose={handleLootClose}
         />

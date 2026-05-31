@@ -84,7 +84,7 @@ export const OutcomeBanner: React.FC<OutcomeBannerProps> = ({
 
         {hasPendingLoot && gameState === 'FLIGHT' && (
           <div className="pending-loot-container" style={{ position: 'relative', display: 'inline-flex' }}>
-            <span 
+            <span
               style={{
                 fontSize: '28px',
                 cursor: 'help',
@@ -98,7 +98,7 @@ export const OutcomeBanner: React.FC<OutcomeBannerProps> = ({
             <div className="loot-tooltip font-orbitron">
               <span style={{ color: '#ff00ff', fontWeight: 'bold' }}>PENDING LOOT DETECTED</span>
               <div style={{ fontSize: '9.5px', marginTop: '4px', opacity: 0.9, lineHeight: '1.3', fontWeight: 'normal', textTransform: 'none' }}>
-                You have salvaged asteroid debris! Secure data cores and successfully complete this sector to extract your free module or hack bypass registers.
+                You have salvaged asteroid debris! Secure data cores and successfully complete this sector to extract your free module or hack.
               </div>
             </div>
           </div>

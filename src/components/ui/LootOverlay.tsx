@@ -8,6 +8,7 @@ interface LootOverlayProps {
   moduleSlots: (ModuleId | null)[];
   onEquipModule: (moduleId: ModuleId, slotIndex: number, lootIndex: number) => void;
   onRearrangeModules: (sourceIndex: number, targetIndex: number) => void;
+  onDiscardEquippedModule: (slotIndex: number) => void;
   onCollectHack: (hackId: HackId, lootIndex: number) => void;
   onClose: () => void;
 }
@@ -17,6 +18,7 @@ export const LootOverlay: React.FC<LootOverlayProps> = ({
   moduleSlots,
   onEquipModule,
   onRearrangeModules,
+  onDiscardEquippedModule,
   onCollectHack,
   onClose
 }) => {
@@ -52,7 +54,7 @@ export const LootOverlay: React.FC<LootOverlayProps> = ({
   return (
     <div className="loot-modal">
       <div className="loot-content glassmorphism">
-        
+
         {/* Upper Dashboard Terminal */}
         <div className="loot-hud-header">
           <div className="loot-hud-panel">
@@ -69,7 +71,7 @@ export const LootOverlay: React.FC<LootOverlayProps> = ({
 
         {/* Central visual panel */}
         <div style={{ display: 'flex', gap: '20px', margin: '15px 0' }}>
-          
+
           {/* Salvaged Modules Shelf Cabinet */}
           <div className="loot-cabinet" style={{ height: '240px' }}>
             <div className="loot-shelf-container">
@@ -162,7 +164,7 @@ export const LootOverlay: React.FC<LootOverlayProps> = ({
               <div className="readout-idle">
                 <div className="scanner-sweeper" style={{ background: 'linear-gradient(90deg, rgba(255,0,255,0) 0%, rgba(255,0,255,0.6) 50%, rgba(255,0,255,0) 100%)', boxShadow: '0 0 10px rgba(255,0,255,0.8)' }} />
                 <div style={{ color: 'var(--chrome-dim)', fontStyle: 'italic', fontSize: '11px', textAlign: 'center', marginTop: '10px' }}>
-                  AWAITING SCAN FEED...<br/>
+                  AWAITING SCAN FEED...<br />
                   <span style={{ fontSize: '9px', opacity: 0.6 }}>DRAG CARTRIDGE FROM SALVAGED SHELF TO CORE PORTS BELOW</span>
                 </div>
               </div>
@@ -173,7 +175,7 @@ export const LootOverlay: React.FC<LootOverlayProps> = ({
 
         {/* Console Deck for Active Modules */}
         <div className="console-deck" style={{ borderColor: 'rgba(255, 0, 255, 0.12)' }}>
-          <div 
+          <div
             className={`console-belt-section modules ${dragOverModule ? 'drag-over' : ''}`}
             onDragOver={(e) => { e.preventDefault(); setDragOverModule(true); }}
             onDragLeave={() => setDragOverModule(false)}
@@ -286,6 +288,25 @@ export const LootOverlay: React.FC<LootOverlayProps> = ({
                         </div>
                       </div>
                     </div>
+                    <button
+                      className="btn-arcade danger font-orbitron discard-equipped-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDiscardEquippedModule(i);
+                      }}
+                      style={{
+                        fontSize: '9.5px',
+                        padding: '3px 12px',
+                        marginTop: '4px',
+                        borderRadius: '4px',
+                        boxShadow: '0 0 6px rgba(255, 71, 87, 0.25)',
+                        cursor: 'pointer',
+                        minWidth: 'auto',
+                        letterSpacing: '0.5px'
+                      }}
+                    >
+                      DISCARD
+                    </button>
                   </div>
                 );
               })}
@@ -296,7 +317,7 @@ export const LootOverlay: React.FC<LootOverlayProps> = ({
         {/* Salvaged Hacks / Firmwares Section */}
         <div className="loot-hacks-section">
           <h4 className="font-orbitron" style={{ color: '#da70d6', textShadow: '0 0 5px rgba(218, 112, 214, 0.25)', margin: '12px 0 8px 0', fontSize: '11px', letterSpacing: '1.5px' }}>
-            SALVAGED FIRMWARE COCKPIT BYPASSES (HACKS)
+            SALVAGED HACKS
           </h4>
           <div className="loot-hacks-container">
             {pendingLoot.hacks.length > 0 ? (
@@ -308,7 +329,7 @@ export const LootOverlay: React.FC<LootOverlayProps> = ({
                       <span className="font-orbitron font-weight-bold" style={{ color: hack.color, fontSize: '12px' }}>
                         {hack.short} {hack.name.toUpperCase()}
                       </span>
-                      <span className="font-orbitron" style={{ fontSize: '9px', color: '#ff00ffcc' }}>BYPASS REGISTER</span>
+                      <span className="font-orbitron" style={{ fontSize: '9px', color: '#ff00ffcc' }}>HACK</span>
                     </div>
                     <div style={{ fontSize: '10px', color: '#e0e0e0', lineHeight: '1.3', flex: 1, minHeight: '30px' }}>
                       {hack.desc}
@@ -328,7 +349,7 @@ export const LootOverlay: React.FC<LootOverlayProps> = ({
                         boxShadow: '0 0 6px rgba(255, 0, 255, 0.3)'
                       }}
                     >
-                      SPLICE FREE REGISTER
+                      COLLECT (FREE)
                     </button>
                   </div>
                 );
@@ -342,9 +363,9 @@ export const LootOverlay: React.FC<LootOverlayProps> = ({
         </div>
 
         {/* Exit Confirm Button */}
-        <button 
-          className="btn-arcade success font-orbitron loot-confirm-btn" 
-          onClick={onClose} 
+        <button
+          className="btn-arcade success font-orbitron loot-confirm-btn"
+          onClick={onClose}
           style={{
             width: '100%',
             marginTop: '16px',
