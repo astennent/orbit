@@ -2,7 +2,7 @@ import { useRef, useMemo, useEffect, useState, Suspense } from 'react'
 import { Canvas, ThreeEvent, useThree, useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
-import { Planet, ExitPortal, Probe, Beacon, GameState, DataToast, Asteroid, Explosion } from '../../types'
+import { Planet, ExitPortal, Probe, Beacon, GameState, DataToast, Asteroid, Explosion, Rocket } from '../../types'
 import { PlanetComponent } from './PlanetComponent'
 import { ExitPortalComponent } from './ExitPortalComponent'
 import { ProbeComponent } from './ProbeComponent'
@@ -10,6 +10,7 @@ import { TrajectoryLine } from './TrajectoryLine'
 import { AsteroidComponent } from './AsteroidComponent'
 import { Nebula } from './Nebula'
 import { ExplosionEffect } from './ExplosionEffect'
+import { RocketComponent } from './RocketComponent'
 import { LAUNCH_SPEED_MULTIPLIER, OUT_OF_BOUNDS_LIMIT } from '../../constants'
 import { getBeaconColor } from '../../utils/statusFormatters'
 
@@ -212,6 +213,7 @@ interface GameCanvasProps {
   portal: ExitPortal
   beacons: Beacon[]
   asteroids: Asteroid[]
+  rockets: Rocket[]
   aimActive: boolean
   aimStartPos: THREE.Vector3
   aimVel: THREE.Vector3 | null
@@ -231,6 +233,7 @@ export function GameCanvas({
   portal,
   beacons,
   asteroids,
+  rockets,
   aimActive,
   aimStartPos,
   aimVel,
@@ -451,6 +454,11 @@ export function GameCanvas({
             a.health > 0 && <AsteroidComponent key={a.id} asteroid={a} />
           ))}
         </Suspense>
+
+        {/* Homing Rocket Missiles */}
+        {rockets && rockets.map(r => (
+          <RocketComponent key={r.id} rocket={r} />
+        ))}
 
         {/* The Target Exit Portal */}
         <ExitPortalComponent portal={portal} />

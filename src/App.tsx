@@ -148,6 +148,7 @@ export default function App() {
     asteroids,
     setAsteroids,
     asteroidsRef,
+    rockets,
     toasts,
     showSelfDestruct,
     setShowSelfDestruct,
@@ -415,6 +416,7 @@ export default function App() {
         portal={portal}
         beacons={beacons}
         asteroids={asteroids}
+        rockets={rockets}
         aimActive={aimActive}
         aimStartPos={aimStartPos}
         aimVel={aimVel}

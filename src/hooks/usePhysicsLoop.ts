@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { Probe, Planet, ExitPortal, Beacon, Asteroid, DataToast, GameState, ModuleId, HackId, TriggerId, LogEntry, Explosion } from '../types'
+import { Probe, Planet, ExitPortal, Beacon, Asteroid, DataToast, GameState, ModuleId, HackId, TriggerId, LogEntry, Explosion, Rocket } from '../types'
 import { UPGRADE_REGISTRY, MODULES_REGISTRY, HACKS_REGISTRY } from '../constants/upgrades'
 import { handleTrigger, executeModuleEffect } from '../utils/moduleEffects'
 import { createFreshProbe, applyDamage } from '../utils/probeUtils'
@@ -10,7 +10,8 @@ import {
   ATMOSPHERE_DRAG,
   PHYSICS_DT,
   GAS_GIANT_MIN_SPEED_THRESHOLD,
-  OUT_OF_BOUNDS_LIMIT
+  OUT_OF_BOUNDS_LIMIT,
+  ROCKET_SPEED
 } from '../constants'
 
 import {
@@ -57,6 +58,7 @@ export function usePhysicsLoop({
 
   const [beacons, setBeacons] = useState<Beacon[]>(initialSector.beacons)
   const [asteroids, setAsteroids] = useState<Asteroid[]>(initialSector.asteroids)
+  const [rockets, setRockets] = useState<Rocket[]>([])
   const [toasts, setToasts] = useState<DataToast[]>([])
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [showSelfDestruct, setShowSelfDestruct] = useState<boolean>(false)
@@ -79,6 +81,7 @@ export function usePhysicsLoop({
   const probeRef = useRef<Probe>(createFreshProbe(aimStartPos))
   const beaconsRef = useRef<Beacon[]>(initialSector.beacons)
   const asteroidsRef = useRef<Asteroid[]>(initialSector.asteroids)
+  const rocketsRef = useRef<Rocket[]>([])
   const selfDestructTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const wasInsideAtmosphereRef = useRef(false)
   const activeCollidingPlanetIdRef = useRef<string | null>(null)
@@ -88,6 +91,8 @@ export function usePhysicsLoop({
   // Timers for active timed hacks
   const oscillatorTimerRef = useRef(1.0)
   const metronomeTimerRef = useRef(3.0)
+  const threeSecondTimerRef = useRef(3.0)
+  const twoSecondTimerRef = useRef(2.0)
   const flightTimeRef = useRef<number>(0)
 
   const triggerDataToast = (text: string, pos: THREE.Vector3, color?: string) => {
@@ -143,6 +148,80 @@ export function usePhysicsLoop({
     }
   }
 
+  const rewardAsteroidDestruction = (ast: Asteroid, pState: Probe) => {
+    // 1. Dynamic colored explosion
+    const astExplColor = ast.type === 'metallic' ? '#ff4d4d' : ast.type === 'ice' ? '#ffd32a' : '#ffa500';
+    const astExplCount = ast.size === 'large' ? 65 : ast.size === 'medium' ? 40 : 20;
+    triggerExplosion(ast.pos, astExplColor, astExplCount);
+
+    // 2. Data rewards
+    let baseDataRewards = ast.type === 'metallic' ? (15 + Math.random() * 35) : (10 + Math.random() * 20);
+    const dataMult = ast.size === 'large' ? 4 : ast.size === 'medium' ? 2 : 1;
+    const finalData = Math.round(baseDataRewards * dataMult);
+    pState.data += finalData;
+
+    // 3. Data toast
+    const toastColor = ast.type === 'metallic' ? '#ff4757' : ast.type === 'ice' ? '#ffd32a' : '#ffa500';
+    triggerDataToast(`+${finalData.toFixed(0)} Data`, ast.pos, toastColor);
+
+    // 4. Hack / Module drop loot rolls
+    const hackChance = (ast.type === 'metallic' ? 0.10 : ast.type === 'carbon' ? 0.05 : 0.03) + (ast.size === 'large' ? 0.10 : ast.size === 'medium' ? 0.05 : 0.0);
+    const modChance = (ast.type === 'metallic' ? 0.0 : ast.type === 'carbon' ? 0.15 : 0.10) + (ast.size === 'large' ? 0.10 : ast.size === 'medium' ? 0.05 : 0.0);
+
+    const rollHack = Math.random() < hackChance;
+    const rollMod = Math.random() < modChance;
+
+    if (rollHack) {
+      const randomHack = HACKS_REGISTRY[Math.floor(Math.random() * HACKS_REGISTRY.length)];
+      triggerDataToast(`LOOTED HACK: ${randomHack.name.toUpperCase()}`, ast.pos, randomHack.color);
+      setHackSlots(prev => [...prev, randomHack.id as HackId]);
+    } else if (rollMod) {
+      const randomMod = MODULES_REGISTRY[Math.floor(Math.random() * MODULES_REGISTRY.length)];
+      const emptyIdx = activeModulesRef.current.indexOf(null);
+      if (emptyIdx !== -1) {
+        triggerDataToast(`LOOTED MODULE: ${randomMod.name.toUpperCase()}`, ast.pos, randomMod.color);
+        setModuleSlots(prev => {
+          const next = [...prev];
+          const firstEmpty = next.indexOf(null);
+          if (firstEmpty !== -1) {
+            next[firstEmpty] = randomMod.id as ModuleId;
+          }
+          return next;
+        });
+      } else {
+        pState.data += 100;
+        triggerDataToast(`SLOTS FULL! +100 DATA`, ast.pos, '#ffd700');
+      }
+    }
+  };
+
+  const spawnRocket = (damage: number) => {
+    const activeAsteroids = asteroidsRef.current.filter(ast => ast.health > 0);
+    if (activeAsteroids.length === 0) return;
+
+    // Find closest asteroid to probe
+    let closestAst = activeAsteroids[0];
+    let minDist = probeRef.current.pos.distanceTo(closestAst.pos);
+    for (let i = 1; i < activeAsteroids.length; i++) {
+      const dist = probeRef.current.pos.distanceTo(activeAsteroids[i].pos);
+      if (dist < minDist) {
+        minDist = dist;
+        closestAst = activeAsteroids[i];
+      }
+    }
+
+    const newRocket: Rocket = {
+      id: `rocket-${Date.now()}-${Math.random()}`,
+      pos: probeRef.current.pos.clone(),
+      vel: new THREE.Vector3(0, 0, 0),
+      targetAsteroidId: closestAst.id,
+      damage
+    };
+
+    rocketsRef.current = [...rocketsRef.current, newRocket];
+    setRockets(rocketsRef.current);
+  };
+
   // Wrapper to dispatch events to handleTrigger with the slots context
   const dispatchTrigger = (triggerId: TriggerId, pState: Probe) => {
     handleTrigger(
@@ -150,7 +229,7 @@ export function usePhysicsLoop({
       pState,
       activeModulesRef.current,
       activeHacksRef.current,
-      { triggerDataToast, sectorQuota }
+      { triggerDataToast, sectorQuota, spawnRocket }
     );
   }
 
@@ -177,7 +256,13 @@ export function usePhysicsLoop({
 
   // Core Hands-Off Simulation Loop (60fps animation)
   useEffect(() => {
-    if (gameState !== 'FLIGHT') return
+    if (gameState !== 'FLIGHT') {
+      rocketsRef.current = [];
+      setRockets([]);
+      threeSecondTimerRef.current = 3.0;
+      twoSecondTimerRef.current = 2.0;
+      return;
+    }
 
     flightTimeRef.current = 0
     wasInsideAtmosphereRef.current = false
@@ -193,6 +278,19 @@ export function usePhysicsLoop({
 
       // Increment flight time since launch
       flightTimeRef.current += PHYSICS_DT
+
+      // Decrement Auto Turret timers
+      threeSecondTimerRef.current -= PHYSICS_DT
+      if (threeSecondTimerRef.current <= 0) {
+        threeSecondTimerRef.current = 3.0
+        dispatchTrigger(TriggerId.EVERY_3_SECONDS, pState)
+      }
+
+      twoSecondTimerRef.current -= PHYSICS_DT
+      if (twoSecondTimerRef.current <= 0) {
+        twoSecondTimerRef.current = 2.0
+        dispatchTrigger(TriggerId.EVERY_2_SECONDS, pState)
+      }
 
       // 1. Gravity Integration
       const acc = new THREE.Vector3()
@@ -505,11 +603,6 @@ export function usePhysicsLoop({
           // Dispatch HIT_ASTEROID
           dispatchTrigger(TriggerId.HIT_ASTEROID, pState);
 
-          // Trigger dynamic colored rock/ice burst explosion
-          const astExplColor = ast.type === 'metallic' ? '#ff4d4d' : ast.type === 'ice' ? '#ffd32a' : '#ffa500';
-          const astExplCount = ast.size === 'large' ? 65 : ast.size === 'medium' ? 40 : 20;
-          triggerExplosion(ast.pos, astExplColor, astExplCount);
-
           if (pState.integrity <= 0) {
             hitDestroyedShip = true
             dispatchTrigger(TriggerId.PROBE_DEATH, pState);
@@ -517,42 +610,8 @@ export function usePhysicsLoop({
             pState.vel.set(0, 0, 0); // Stop probe movement on death!
           }
 
-          let baseDataRewards = ast.type === 'metallic' ? (15 + Math.random() * 35) : (10 + Math.random() * 20)
-          const dataMult = ast.size === 'large' ? 4 : ast.size === 'medium' ? 2 : 1
-          const finalData = Math.round(baseDataRewards * dataMult)
-          pState.data += finalData
+          rewardAsteroidDestruction(ast, pState);
 
-          const toastColor = ast.type === 'metallic' ? '#ff4757' : ast.type === 'ice' ? '#ffd32a' : '#ffa500'
-          triggerDataToast(`+${finalData.toFixed(0)} Data`, ast.pos, toastColor)
-
-          const hackChance = (ast.type === 'metallic' ? 0.10 : ast.type === 'carbon' ? 0.05 : 0.03) + (ast.size === 'large' ? 0.10 : ast.size === 'medium' ? 0.05 : 0.0)
-          const modChance = (ast.type === 'metallic' ? 0.0 : ast.type === 'carbon' ? 0.15 : 0.10) + (ast.size === 'large' ? 0.10 : ast.size === 'medium' ? 0.05 : 0.0)
-
-          const rollHack = Math.random() < hackChance
-          const rollMod = Math.random() < modChance
-
-          if (rollHack) {
-            const randomHack = HACKS_REGISTRY[Math.floor(Math.random() * HACKS_REGISTRY.length)]
-            triggerDataToast(`LOOTED HACK: ${randomHack.name.toUpperCase()}`, ast.pos, randomHack.color)
-            setHackSlots(prev => [...prev, randomHack.id as HackId])
-          } else if (rollMod) {
-            const randomMod = MODULES_REGISTRY[Math.floor(Math.random() * MODULES_REGISTRY.length)]
-            const emptyIdx = activeModulesRef.current.indexOf(null)
-            if (emptyIdx !== -1) {
-              triggerDataToast(`LOOTED MODULE: ${randomMod.name.toUpperCase()}`, ast.pos, randomMod.color)
-              setModuleSlots(prev => {
-                const next = [...prev]
-                const firstEmpty = next.indexOf(null)
-                if (firstEmpty !== -1) {
-                  next[firstEmpty] = randomMod.id as ModuleId
-                }
-                return next
-              })
-            } else {
-              pState.data += 100
-              triggerDataToast(`SLOTS FULL! +100 DATA`, ast.pos, '#ffd700')
-            }
-          }
           return { ...ast, health: 0 }
         }
         return ast
@@ -568,6 +627,88 @@ export function usePhysicsLoop({
         setProbe(pState)
         resolveFlightOutcome(pState, 'CRASHED', 'Asteroid Crash')
         return
+      }
+
+      // 4.7. Update Rockets and Collision Checks
+      let rocketsUpdated = false
+      let asteroidsChanged = false
+      const activeRockets: Rocket[] = []
+
+      // Work on a copy of asteroids to avoid immediate mutation issues
+      let tempAsteroids = asteroidsRef.current.map(ast => ({ ...ast }))
+
+      for (const rocket of rocketsRef.current) {
+        // Find target asteroid
+        let targetAst = tempAsteroids.find(ast => ast.id === rocket.targetAsteroidId && ast.health > 0)
+        
+        let targetAsteroidId = rocket.targetAsteroidId
+        if (!targetAst) {
+          // Re-lock nearest
+          const activeAsteroids = tempAsteroids.filter(ast => ast.health > 0)
+          if (activeAsteroids.length === 0) {
+            // No target, self-destruct with a small explosion
+            triggerExplosion(rocket.pos, '#ffaa00', 8)
+            rocketsUpdated = true
+            continue
+          } else {
+            let closestAst = activeAsteroids[0]
+            let minDist = rocket.pos.distanceTo(closestAst.pos)
+            for (let i = 1; i < activeAsteroids.length; i++) {
+              const dist = rocket.pos.distanceTo(activeAsteroids[i].pos)
+              if (dist < minDist) {
+                minDist = dist
+                closestAst = activeAsteroids[i]
+              }
+            }
+            targetAsteroidId = closestAst.id
+            targetAst = closestAst
+          }
+        }
+
+        // Steer rocket pos towards target pos
+        const dir = new THREE.Vector3().subVectors(targetAst.pos, rocket.pos)
+        dir.y = 0
+        const dist = dir.length()
+        dir.normalize()
+
+        const nextVel = dir.clone().multiplyScalar(ROCKET_SPEED)
+        const nextPos = rocket.pos.clone().addScaledVector(nextVel, PHYSICS_DT)
+        rocketsUpdated = true
+
+        // Collision check
+        if (dist <= targetAst.radius + 0.2) {
+          // Explode rocket
+          triggerExplosion(nextPos, '#ff9800', 12)
+
+          // Deal damage
+          targetAst.health -= rocket.damage
+          asteroidsChanged = true
+
+          if (targetAst.health <= 0) {
+            targetAst.health = 0
+            rewardAsteroidDestruction(targetAst, pState)
+          } else {
+            triggerDataToast(`💥 Rocket Hit: -${rocket.damage} HP`, targetAst.pos, '#ff9800')
+          }
+        } else {
+          activeRockets.push({
+            id: rocket.id,
+            pos: nextPos,
+            vel: nextVel,
+            targetAsteroidId,
+            damage: rocket.damage
+          })
+        }
+      }
+
+      if (rocketsUpdated) {
+        rocketsRef.current = activeRockets
+        setRockets(activeRockets)
+      }
+
+      if (asteroidsChanged) {
+        asteroidsRef.current = tempAsteroids
+        setAsteroids(tempAsteroids)
       }
 
       // 5. Portal Escape
@@ -603,6 +744,7 @@ export function usePhysicsLoop({
     asteroids,
     setAsteroids,
     asteroidsRef,
+    rockets,
     toasts,
     triggerDataToast,
     showSelfDestruct,

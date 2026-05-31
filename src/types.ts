@@ -109,6 +109,8 @@ export enum ModuleId {
   BAROSPHERE_SIEVE_V2 = 'BAROSPHERE_SIEVE_V2',
   MAGNETO_SCRAPPER = 'MAGNETO_SCRAPPER',
   MAGNETO_SCRAPPER_V2 = 'MAGNETO_SCRAPPER_V2',
+  AUTO_TURRET = 'AUTO_TURRET',
+  AUTO_TURRET_V2 = 'AUTO_TURRET_V2',
 }
 
 export enum HackId {
@@ -135,6 +137,8 @@ export enum TriggerId {
   PROBE_DEATH = 'PROBE_DEATH',
   OUT_OF_BOUNDS = 'OUT_OF_BOUNDS',
   PROBE_DEATH_BY_COLLISION = 'PROBE_DEATH_BY_COLLISION',
+  EVERY_3_SECONDS = 'EVERY_3_SECONDS',
+  EVERY_2_SECONDS = 'EVERY_2_SECONDS',
 }
 
 export interface UpgradeEntry {
@@ -162,6 +166,14 @@ export interface Explosion {
   pos: THREE.Vector3;
   color: string;
   count: number;
+}
+
+export interface Rocket {
+  id: string;
+  pos: THREE.Vector3;
+  vel: THREE.Vector3;
+  targetAsteroidId: string;
+  damage: number;
 }
 
 

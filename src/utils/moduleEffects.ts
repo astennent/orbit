@@ -24,6 +24,7 @@ export interface TriggerContext {
   triggerDataToast: (text: string, pos: THREE.Vector3, color?: string) => void;
   forceTriggered?: boolean;
   sectorQuota?: number;
+  spawnRocket?: (damage: number) => void;
 }
 
 /**
@@ -37,8 +38,6 @@ export function handleTrigger(
   activeHacks: HackId[],
   context: TriggerContext
 ) {
-  console.log(`[Event Dispatcher] Trigger fired: ${triggerId}`);
-
   const isDeathTrigger =
     triggerId === TriggerId.PROBE_DEATH ||
     triggerId === TriggerId.PROBE_DEATH_BY_COLLISION ||
@@ -50,7 +49,6 @@ export function handleTrigger(
     if (ejectionCount > 0) {
       const slot6Module = activeModules[5];
       if (slot6Module) {
-        console.log(`[Ejection Route #6 Hack] Triggering Slot 6 module three times per hack!`);
         for (let j = 0; j < ejectionCount; j++) {
           context.triggerDataToast("➏ EJECTION ROUTE #6 ACTIVE!", pState.pos, '#ff00ff');
           for (let i = 0; i < 3; i++) {
@@ -73,7 +71,6 @@ export function handleTrigger(
         if (equippedIdxs.length > 0) {
           const randIdx = equippedIdxs[Math.floor(Math.random() * equippedIdxs.length)];
           const randomModuleId = activeModules[randIdx] as ModuleId;
-          console.log(`[Short-Circuit Hack] Triggering random module: ${randomModuleId}`);
           context.triggerDataToast(`↯ SHORT-CIRCUIT: ${UPGRADE_REGISTRY[randomModuleId].name.toUpperCase()}`, pState.pos, '#00ffff');
           executeModuleEffect(randIdx, randomModuleId, pState, context);
         }
@@ -87,7 +84,6 @@ export function handleTrigger(
 
   for (let i = 0; i < iterations; i++) {
     if (i > 0) {
-      console.log(`[Death-Rattle Loop Hack] Re-triggering death effects (Iteration ${i + 1})`);
       context.triggerDataToast("☠ DEATH-RATTLE: DOUBLE TRIGGER!", pState.pos, '#ff3333');
     }
 
@@ -120,53 +116,45 @@ export function executeModuleEffect(moduleIndex: number, moduleId: ModuleId, pSt
 
   switch (moduleId) {
     case ModuleId.ATMOSPHERIC_SCOOP:
-      console.log(`Triggered ATMOSPHERIC_SCOOP! ${ATMOSPHERIC_SCOOP_MULTIPLIER}x data boost active for ${ATMOSPHERIC_SCOOP_DURATION}s.`);
       pState.scoopActiveTimer = ATMOSPHERIC_SCOOP_DURATION;
       pState.scoopMultiplier = ATMOSPHERIC_SCOOP_MULTIPLIER;
       context.triggerDataToast(`ATMOSPHERIC SCOOP: ${ATMOSPHERIC_SCOOP_MULTIPLIER}x DATA BOOST ACTIVE!`, pState.pos, 'var(--glow-cyan)');
       break;
 
     case ModuleId.ATMOSPHERIC_SCOOP_V2:
-      console.log(`Triggered ATMOSPHERIC_SCOOP_V2! ${ATMOSPHERIC_SCOOP_V2_MULTIPLIER}x data boost active for ${ATMOSPHERIC_SCOOP_V2_DURATION}s.`);
       pState.scoopActiveTimer = ATMOSPHERIC_SCOOP_V2_DURATION;
       pState.scoopMultiplier = ATMOSPHERIC_SCOOP_V2_MULTIPLIER;
       context.triggerDataToast(`ATMOSPHERIC SCOOP V2: ${ATMOSPHERIC_SCOOP_V2_MULTIPLIER}x DATA BOOST ACTIVE!`, pState.pos, 'var(--glow-cyan)');
       break;
 
     case ModuleId.RAMJET:
-      console.log(`Triggered RAMJET! +${RAMJET_SHIELD_ADD} shield level, +${RAMJET_SHIELD_DURATION}s shield duration.`);
       pState.shieldLevel += RAMJET_SHIELD_ADD;
       pState.shieldDuration += RAMJET_SHIELD_DURATION;
       context.triggerDataToast(`RAMJET: SHIELD +${RAMJET_SHIELD_ADD} (${RAMJET_SHIELD_DURATION}s)`, pState.pos, 'var(--glow-green)');
       break;
 
     case ModuleId.RAMJET_V2:
-      console.log(`Triggered RAMJET V2! +${RAMJET_V2_SHIELD_ADD} shield level, +${RAMJET_V2_SHIELD_DURATION}s shield duration.`);
       pState.shieldLevel += RAMJET_V2_SHIELD_ADD;
       pState.shieldDuration += RAMJET_V2_SHIELD_DURATION;
       context.triggerDataToast(`RAMJET V2: SHIELD +${RAMJET_V2_SHIELD_ADD} (${RAMJET_V2_SHIELD_DURATION}s)`, pState.pos, 'var(--glow-green)');
       break;
 
     case ModuleId.GRAVITY_STABILIZER:
-      console.log(`Triggered GRAVITY_STABILIZER! Collecting ${GRAVITY_STABILIZER_BONUS_DATA} data.`);
       pState.data += GRAVITY_STABILIZER_BONUS_DATA;
       context.triggerDataToast(`GRAVITY STABILIZER: +${GRAVITY_STABILIZER_BONUS_DATA} DATA`, pState.pos, 'var(--glow-orange)');
       break;
 
     case ModuleId.GRAVITY_STABILIZER_V2:
-      console.log(`Triggered GRAVITY_STABILIZER V2! Collecting ${GRAVITY_STABILIZER_V2_BONUS_DATA} data.`);
       pState.data += GRAVITY_STABILIZER_V2_BONUS_DATA;
       context.triggerDataToast(`GRAVITY STABILIZER V2: +${GRAVITY_STABILIZER_V2_BONUS_DATA} DATA`, pState.pos, 'var(--glow-orange)');
       break;
 
     case ModuleId.BLACK_BOX:
-      console.log(`Triggered BLACK_BOX! Collecting ${BLACK_BOX_BONUS_DATA} data.`);
       pState.data += BLACK_BOX_BONUS_DATA;
       context.triggerDataToast(`BLACK BOX: +${BLACK_BOX_BONUS_DATA} DATA SECURED`, pState.pos, '#ff4757');
       break;
 
     case ModuleId.BLACK_BOX_V2:
-      console.log(`Triggered BLACK_BOX V2! Collecting ${BLACK_BOX_V2_BONUS_DATA} data.`);
       pState.data += BLACK_BOX_V2_BONUS_DATA;
       context.triggerDataToast(`BLACK BOX V2: +${BLACK_BOX_V2_BONUS_DATA} DATA SECURED`, pState.pos, '#ff4757');
       break;
@@ -174,7 +162,6 @@ export function executeModuleEffect(moduleIndex: number, moduleId: ModuleId, pSt
     case ModuleId.BAROSPHERE_SIEVE: {
       const quota = context.sectorQuota;
       const sieveBonus = quota !== undefined ? Math.round(quota * 0.25) : BAROSPHERE_SIEVE_BONUS_DATA;
-      console.log(`Triggered BAROSPHERE_SIEVE! Collecting ${sieveBonus} data.`);
       pState.data += sieveBonus;
       context.triggerDataToast(`BAROSPHERE SIEVE: +${sieveBonus} DATA`, pState.pos, '#2ed573');
       break;
@@ -183,22 +170,31 @@ export function executeModuleEffect(moduleIndex: number, moduleId: ModuleId, pSt
     case ModuleId.BAROSPHERE_SIEVE_V2: {
       const quota = context.sectorQuota;
       const sieveBonus = quota !== undefined ? Math.round(quota * 0.50) : BAROSPHERE_SIEVE_V2_BONUS_DATA;
-      console.log(`Triggered BAROSPHERE_SIEVE_V2! Collecting ${sieveBonus} data.`);
       pState.data += sieveBonus;
       context.triggerDataToast(`BAROSPHERE SIEVE V2: +${sieveBonus} DATA`, pState.pos, '#2ed573');
       break;
     }
 
     case ModuleId.MAGNETO_SCRAPPER:
-      console.log(`Triggered MAGNETO_SCRAPPER! Increasing magnet range.`);
       pState.magnetRadius += MAGNETO_SCRAPPER_RANGE_ADD;
       context.triggerDataToast(`MAGNET RANGE +${MAGNETO_SCRAPPER_RANGE_ADD.toFixed(1)} (Total: ${pState.magnetRadius.toFixed(1)})`, pState.pos, '#a0a0ff');
       break;
 
     case ModuleId.MAGNETO_SCRAPPER_V2:
-      console.log(`Triggered MAGNETO_SCRAPPER V2! Increasing magnet range.`);
       pState.magnetRadius += MAGNETO_SCRAPPER_V2_RANGE_ADD;
       context.triggerDataToast(`MAGNET RANGE +${MAGNETO_SCRAPPER_V2_RANGE_ADD.toFixed(1)} (Total: ${pState.magnetRadius.toFixed(1)})`, pState.pos, '#a0a0ff');
+      break;
+
+    case ModuleId.AUTO_TURRET:
+      if (context.spawnRocket) {
+        context.spawnRocket(2);
+      }
+      break;
+
+    case ModuleId.AUTO_TURRET_V2:
+      if (context.spawnRocket) {
+        context.spawnRocket(3);
+      }
       break;
 
     default:

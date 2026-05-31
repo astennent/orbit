@@ -19,3 +19,4 @@ export const OUT_OF_BOUNDS_LIMIT = 80.0; // Perimeter boundary radius to prevent
 
 export const DEFAULT_MAGNET_RADIUS = 1.0; // Default probe collection magnet radius
 
+export const ROCKET_SPEED = 24.0; // Snappy speed for active homing missiles

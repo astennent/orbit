@@ -96,10 +96,18 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
     triggerId: TriggerId.HIT_BEACON,
     image: magnetoScrapperImg
   },
-  // TODO: Beacon extrapolator: Grants +1 data for each beacon collected this turn, triggered on hit_beacon
-  // TODO: Asteroid extrapolator: Grants +1 data for each asteroid hit this entire run, triggered on hit_asteroid
-  // TODO: Autoturret: Fires a rocket at the nearest asteroid every 1 second
-  // TODO: Deep space plunger: When going out of bounds, fires a mini drone with 1 hp and 6 seconds of battery backward directly toward each planet.
+  [ModuleId.AUTO_TURRET]: {
+    id: ModuleId.AUTO_TURRET,
+    name: 'Auto Turret',
+    short: 'AT',
+    type: 'module',
+    cost: 3,
+    color: '#ff9800',
+    desc: 'Every 3 seconds, fire a homing rocket at the nearest asteroid dealing 2 damage.',
+    blurb: 'Heat-seeking telemetry missile clusters locked onto target debris.',
+    triggerId: TriggerId.EVERY_3_SECONDS,
+    image: gravityStabilizerImg
+  },
   [HackId.DEEP_SPACE_SENSOR]: {
     id: HackId.DEEP_SPACE_SENSOR,
     name: 'Deep Space Sensor',
@@ -241,6 +249,18 @@ export const UPGRADE_REGISTRY: Record<UpgradeId, UpgradeEntry> = {
     blurb: "Superconducting electromagnet rigs. Draws in metallic beacons from across the orbit.",
     triggerId: TriggerId.HIT_BEACON,
     image: magnetoScrapperImg
+  },
+  [ModuleId.AUTO_TURRET_V2]: {
+    id: ModuleId.AUTO_TURRET_V2,
+    name: 'Auto Turret v2',
+    short: 'AT²',
+    type: 'module',
+    cost: 6,
+    color: '#ff5500',
+    desc: 'Every 2 seconds, fire a homing rocket at the nearest asteroid dealing 3 damage.',
+    blurb: 'Supercharged micro-rocket launcher firing high-yield plasma charges.',
+    triggerId: TriggerId.EVERY_2_SECONDS,
+    image: gravityStabilizerImg
   }
 }
 
@@ -257,6 +277,8 @@ export const UPGRADE_MAPPING: Record<ModuleId, ModuleId> = {
   [ModuleId.BAROSPHERE_SIEVE_V2]: ModuleId.BAROSPHERE_SIEVE_V2,
   [ModuleId.MAGNETO_SCRAPPER]: ModuleId.MAGNETO_SCRAPPER_V2,
   [ModuleId.MAGNETO_SCRAPPER_V2]: ModuleId.MAGNETO_SCRAPPER_V2,
+  [ModuleId.AUTO_TURRET]: ModuleId.AUTO_TURRET_V2,
+  [ModuleId.AUTO_TURRET_V2]: ModuleId.AUTO_TURRET_V2,
 }
 
 export const ALL_UPGRADES = Object.values(UPGRADE_REGISTRY)
