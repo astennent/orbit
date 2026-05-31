@@ -414,3 +414,77 @@ input[type="range"]::-webkit-slider-thumb:hover {
   transform: translateY(0);
 }
 
+/* ── Purple Inspect Loot Button ── */
+.btn-arcade.loot-btn {
+  background: linear-gradient(to bottom, #8a2be2 0%, #4b0082 100%);
+  border-color: #ff00ff;
+  box-shadow: 
+    0 6px 0 #3b0066,
+    0 8px 15px rgba(0, 0, 0, 0.6),
+    inset 0 2px 0 rgba(255,255,255,0.3);
+}
+
+.btn-arcade.loot-btn:hover {
+  background: linear-gradient(to bottom, #a03cfa 0%, #5d02a3 100%);
+  box-shadow: 
+    0 8px 0 #3b0066,
+    0 10px 20px rgba(0, 0, 0, 0.7),
+    0 0 15px rgba(255, 0, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+.btn-arcade.loot-btn:active {
+  transform: translateY(4px);
+  box-shadow: 
+    0 2px 0 #3b0066,
+    0 3px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* ── Pending Loot Tooltip & Glow ── */
+.pending-loot-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.pending-loot-container:hover .loot-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -10px);
+}
+
+.loot-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translate(-50%, 0);
+  background: rgba(14, 5, 24, 0.98);
+  border: 1.5px solid #ff00ff;
+  border-radius: 8px;
+  box-shadow: 
+    0 10px 25px rgba(0,0,0,0.85),
+    0 0 15px rgba(255, 0, 255, 0.35);
+  padding: 10px 14px;
+  color: #fff;
+  font-size: 11px;
+  width: 240px;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10000;
+}
+
+@keyframes pulseGlow {
+  0% {
+    transform: scale(1.0);
+    filter: drop-shadow(0 0 4px #ff00ff);
+  }
+  100% {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 15px #ff00ff) brightness(1.2);
+  }
+}
+

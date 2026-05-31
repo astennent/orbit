@@ -1,0 +1,277 @@
+/* Immersive Salvaged Extraction Deck Styling */
+
+.loot-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(4, 2, 10, 0.92);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: modalFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.loot-content {
+  background: linear-gradient(145deg, rgba(14, 5, 24, 0.99) 0%, rgba(4, 1, 10, 1) 100%);
+  border: 2.5px solid #ff00ff;
+  box-shadow: 
+    0 20px 50px rgba(0, 0, 0, 0.95),
+    0 0 35px rgba(255, 0, 255, 0.2),
+    inset 0 0 20px rgba(255, 0, 255, 0.05);
+  border-radius: 20px;
+  width: 900px;
+  max-width: 95%;
+  padding: 24px 30px;
+  display: flex;
+  flex-direction: column;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Neon split copper header stripe */
+.loot-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #ff00ff 0%, #da70d6 50%, #ff00ff 100%);
+  box-shadow: 0 1px 8px rgba(255, 0, 255, 0.5);
+}
+
+/* Header Grid */
+.loot-hud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid rgba(255, 0, 255, 0.2);
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+}
+
+.loot-hud-panel h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 26px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #ff00ff;
+  text-shadow: 0 0 12px rgba(255, 0, 255, 0.5);
+  margin: 0;
+}
+
+.loot-hud-panel.salvage-counter {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1.5px solid rgba(255, 0, 255, 0.35);
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.15), inset 0 0 8px rgba(255, 0, 255, 0.05);
+  border-radius: 8px;
+  padding: 8px 16px;
+  text-align: right;
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 8px rgba(255, 0, 255, 0.45);
+  color: #ff00ff;
+}
+
+/* Draggable Salvaged Cabinet Frame */
+.loot-cabinet {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: rgba(3, 1, 8, 0.85);
+  border: 2px solid rgba(255, 0, 255, 0.2);
+  border-radius: 12px;
+  padding: 12px 18px;
+  box-shadow: 
+    0 0 20px rgba(0, 0, 0, 0.8),
+    inset 0 0 25px rgba(0, 0, 0, 0.8);
+  gap: 12px;
+  justify-content: space-around;
+  width: 560px;
+  height: 240px;
+  box-sizing: border-box;
+}
+
+.loot-shelf-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.loot-shelf-label {
+  font-size: 8px;
+  color: #da70d6a0;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* Salvaged shelf beam */
+.loot-shelf-metal-beam {
+  background: linear-gradient(0deg, rgba(8, 2, 14, 0.9) 0%, rgba(16, 4, 28, 0.95) 100%);
+  border-bottom: 4.5px solid #ba55d3; /* Magenta support beam */
+  border-radius: 6px;
+  box-shadow: 
+    0 5px 12px rgba(0, 0, 0, 0.6),
+    0 0 8px rgba(186, 85, 211, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  padding: 6px 12px;
+  display: flex;
+  justify-content: flex-start;
+  gap: 15px;
+  align-items: center;
+  min-height: 140px;
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+
+.loot-empty-shelf {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.15);
+  font-size: 11px;
+  letter-spacing: 2px;
+  min-height: 120px;
+  text-shadow: 0 0 4px rgba(255,255,255,0.05);
+}
+
+.pulsing-text {
+  animation: pulseDim 2s infinite alternate;
+}
+
+@keyframes pulseDim {
+  0% { opacity: 0.35; }
+  100% { opacity: 0.75; }
+}
+
+/* Draggable Cartridges */
+.shop-cartridge.loot-cartridge {
+  cursor: grab;
+  transition: all 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.shop-cartridge.loot-cartridge:active {
+  cursor: grabbing;
+  transform: scale(0.92);
+}
+
+.shop-cartridge.loot-cartridge:hover {
+  transform: translateY(-4px) scale(1.06);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6), 0 0 12px #ff00ff40;
+  filter: brightness(1.15);
+}
+
+/* Empty active port slots in extraction bay */
+.belt-slot.empty-port {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.belt-slot.empty-port:hover {
+  border-color: rgba(255, 0, 255, 0.45) !important;
+  background: rgba(255, 0, 255, 0.03) !important;
+  box-shadow: 0 0 8px rgba(255, 0, 255, 0.1) !important;
+}
+
+/* Hacks extraction lists */
+.loot-hacks-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.loot-hacks-container {
+  display: flex;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1.5px solid rgba(255, 0, 255, 0.1);
+  border-radius: 12px;
+  padding: 14px;
+  min-height: 120px;
+  box-sizing: border-box;
+  overflow-x: auto;
+  align-items: center;
+}
+
+.loot-hack-card {
+  width: 250px;
+  min-width: 250px;
+  height: 125px;
+  background: rgba(10, 4, 18, 0.88);
+  border: 1.5px solid rgba(255, 0, 255, 0.25);
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.loot-hack-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 0, 255, 0.55);
+  box-shadow: 0 4px 15px rgba(255, 0, 255, 0.12), inset 0 0 8px rgba(255,0,255,0.05);
+}
+
+.loot-empty-hacks {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.12);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 3px rgba(255,255,255,0.03);
+}
+
+/* General Arcade Buttons Customizations for Extraction Deck */
+.collect-hack-btn {
+  box-shadow: 0 4px 0 #8b008b, 0 6px 12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.3) !important;
+  border-color: #fff !important;
+  color: #fff !important;
+  transition: all 0.1s ease-out !important;
+  min-width: auto !important;
+  letter-spacing: 0.5px !important;
+}
+
+.collect-hack-btn:hover {
+  background: linear-gradient(to bottom, #f05ee6 0%, #9932cc 100%) !important;
+  box-shadow: 0 6px 0 #8b008b, 0 8px 15px rgba(0, 0, 0, 0.6), 0 0 12px rgba(255, 0, 255, 0.5) !important;
+  transform: translateY(-1px) !important;
+}
+
+.collect-hack-btn:active {
+  transform: translateY(3px) !important;
+  box-shadow: 0 1px 0 #8b008b, 0 2px 4px rgba(0, 0, 0, 0.4) !important;
+}
+
+.loot-confirm-btn {
+  letter-spacing: 2px !important;
+  box-shadow: 0 6px 0 #3b0066, 0 8px 15px rgba(0, 0, 0, 0.6), inset 0 2px 0 rgba(255,255,255,0.3) !important;
+  border-color: #fff !important;
+  color: #fff !important;
+  transition: all 0.1s ease-out !important;
+}
+
+.loot-confirm-btn:hover {
+  background: linear-gradient(to bottom, #a03cfa 0%, #5d02a3 100%) !important;
+  box-shadow: 0 8px 0 #3b0066, 0 10px 20px rgba(0, 0, 0, 0.7), 0 0 15px rgba(255, 0, 255, 0.5) !important;
+  transform: translateY(-2px) !important;
+}
+
+.loot-confirm-btn:active {
+  transform: translateY(4px) !important;
+  box-shadow: 0 2px 0 #3b0066, 0 3px 6px rgba(0, 0, 0, 0.5) !important;
+}

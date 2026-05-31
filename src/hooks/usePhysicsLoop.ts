@@ -34,9 +34,8 @@ interface UsePhysicsLoopProps {
   onSecureDataCores: (cores: number) => void
   activeModulesRef: React.MutableRefObject<(ModuleId | null)[]>
   activeHacksRef: React.MutableRefObject<HackId[]>
-  setModuleSlots: React.Dispatch<React.SetStateAction<(ModuleId | null)[]>>
-  setHackSlots: React.Dispatch<React.SetStateAction<HackId[]>>
   sectorQuota: number
+  setPendingLoot: React.Dispatch<React.SetStateAction<{ modules: ModuleId[]; hacks: HackId[] }>>
 }
 
 export function usePhysicsLoop({
@@ -50,9 +49,8 @@ export function usePhysicsLoop({
   onSecureDataCores,
   activeModulesRef,
   activeHacksRef,
-  setModuleSlots,
-  setHackSlots,
-  sectorQuota
+  sectorQuota,
+  setPendingLoot
 }: UsePhysicsLoopProps) {
   const [probe, setProbe] = useState<Probe>(() => createFreshProbe(aimStartPos))
 
@@ -174,24 +172,17 @@ export function usePhysicsLoop({
     if (rollHack) {
       const randomHack = HACKS_REGISTRY[Math.floor(Math.random() * HACKS_REGISTRY.length)];
       triggerDataToast(`LOOTED HACK: ${randomHack.name.toUpperCase()}`, ast.pos, randomHack.color);
-      setHackSlots(prev => [...prev, randomHack.id as HackId]);
+      setPendingLoot(prev => ({
+        ...prev,
+        hacks: [...prev.hacks, randomHack.id as HackId]
+      }));
     } else if (rollMod) {
       const randomMod = MODULES_REGISTRY[Math.floor(Math.random() * MODULES_REGISTRY.length)];
-      const emptyIdx = activeModulesRef.current.indexOf(null);
-      if (emptyIdx !== -1) {
-        triggerDataToast(`LOOTED MODULE: ${randomMod.name.toUpperCase()}`, ast.pos, randomMod.color);
-        setModuleSlots(prev => {
-          const next = [...prev];
-          const firstEmpty = next.indexOf(null);
-          if (firstEmpty !== -1) {
-            next[firstEmpty] = randomMod.id as ModuleId;
-          }
-          return next;
-        });
-      } else {
-        pState.data += 100;
-        triggerDataToast(`SLOTS FULL! +100 DATA`, ast.pos, '#ffd700');
-      }
+      triggerDataToast(`LOOTED MODULE: ${randomMod.name.toUpperCase()}`, ast.pos, randomMod.color);
+      setPendingLoot(prev => ({
+        ...prev,
+        modules: [...prev.modules, randomMod.id as ModuleId]
+      }));
     }
   };
 

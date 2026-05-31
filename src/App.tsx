@@ -10,6 +10,7 @@ import { ShipsLogPanel } from './components/ui/ShipsLogPanel'
 import { BuildSpecsPanel } from './components/ui/BuildSpecsPanel'
 import { LaunchControlPanel } from './components/ui/LaunchControlPanel'
 import { OutcomeBanner } from './components/ui/OutcomeBanner'
+import { LootOverlay } from './components/ui/LootOverlay'
 import { usePhysicsLoop } from './hooks/usePhysicsLoop'
 import { useSlingshotControls } from './hooks/useSlingshotControls'
 import { getStatusDisplay } from './utils/statusFormatters'
@@ -92,6 +93,8 @@ export default function App() {
   const [portal, setPortal] = useState(initialSector.portal)
   const [isShopOpen, setIsShopOpen] = useState(false)
   const [isHackStoreOpen, setIsHackStoreOpen] = useState(false)
+  const [isLootOpen, setIsLootOpen] = useState(false)
+  const [pendingLoot, setPendingLoot] = useState<{ modules: ModuleId[]; hacks: HackId[] }>({ modules: [], hacks: [] })
 
   const gameStateRef = useRef<GameState>('IDLE')
   const dataCoresRef = useRef<number>(0)
@@ -171,9 +174,8 @@ export default function App() {
     },
     activeModulesRef,
     activeHacksRef,
-    setModuleSlots,
-    setHackSlots,
-    sectorQuota
+    sectorQuota,
+    setPendingLoot
   })
 
   // --- Aiming Slingshot Interactivity Hook Integration ---
@@ -188,6 +190,7 @@ export default function App() {
     gameStateRef,
     aimStartPos,
     onLaunch: (firingVelocity) => {
+      setPendingLoot({ modules: [], hacks: [] })
       probeRef.current = createFreshProbe(aimStartPos, firingVelocity, [aimStartPos])
       setProbe({ ...probeRef.current })
       setGameState('FLIGHT')
@@ -238,6 +241,56 @@ export default function App() {
 
   // Handle Next Sector button trigger
   const handleNextLevel = () => {
+    const hasLoot = pendingLoot.modules.length > 0 || pendingLoot.hacks.length > 0
+    if (hasLoot) {
+      setIsLootOpen(true)
+    } else {
+      if (level % 10 === 7) {
+        setIsHackStoreOpen(true)
+      } else if (level % 5 === 4) {
+        setIsShopOpen(true)
+      } else {
+        advanceLevel()
+      }
+    }
+  }
+
+  // Equip a module salvaged from an asteroid
+  const handleEquipLootModule = (moduleId: ModuleId, slotIndex: number, lootIndex: number) => {
+    setModuleSlots(prev => {
+      const next = [...prev]
+      const existing = next[slotIndex]
+      if (existing && existing === moduleId && !existing.endsWith('_V2')) {
+        next[slotIndex] = UPGRADE_MAPPING[existing]
+        console.log(`[Fusion Loot] Upgraded slot ${slotIndex} to V2!`)
+      } else {
+        next[slotIndex] = moduleId
+      }
+      return next
+    })
+
+    setPendingLoot(prev => {
+      const nextModules = [...prev.modules]
+      nextModules.splice(lootIndex, 1)
+      return { ...prev, modules: nextModules }
+    })
+  }
+
+  // Collect a hack salvaged from an asteroid
+  const handleCollectHack = (hackId: HackId, lootIndex: number) => {
+    setHackSlots(prev => [...prev, hackId])
+    setPendingLoot(prev => {
+      const nextHacks = [...prev.hacks]
+      nextHacks.splice(lootIndex, 1)
+      return { ...prev, hacks: nextHacks }
+    })
+  }
+
+  // Close Loot extraction overlay and continue to next level or shop
+  const handleLootClose = () => {
+    setIsLootOpen(false)
+    setPendingLoot({ modules: [], hacks: [] })
+
     if (level % 10 === 7) {
       setIsHackStoreOpen(true)
     } else if (level % 5 === 4) {
@@ -315,6 +368,7 @@ export default function App() {
   // Reset the probe level simulation layout
   const handleResetLevel = () => {
     setGameState('IDLE')
+    setPendingLoot({ modules: [], hacks: [] })
     const freshProbe = createFreshProbe(aimStartPos)
     probeRef.current = freshProbe
     setProbe(freshProbe)
@@ -351,6 +405,7 @@ export default function App() {
     setDataCores(0)
     setModuleSlots([null, null, null, null, null, null])
     setHackSlots([])
+    setPendingLoot({ modules: [], hacks: [] })
     setLevel(1)
 
     const freshPlanets = generatePlanets(1)
@@ -384,6 +439,7 @@ export default function App() {
   // Dev-only handler to cheat/advance sector with +3 Data Cores
   const handleDevAdvance = () => {
     setDataCores(current => Math.min(100, current + 3))
+    setPendingLoot({ modules: [], hacks: [] })
     if (level % 10 === 7) {
       setIsHackStoreOpen(true)
     } else if (level % 5 === 4) {
@@ -451,8 +507,20 @@ export default function App() {
         />
       )}
 
+      {/* Loot Extraction Overlay Modal */}
+      {isLootOpen && (
+        <LootOverlay
+          pendingLoot={pendingLoot}
+          moduleSlots={moduleSlots}
+          onEquipModule={handleEquipLootModule}
+          onRearrangeModules={handleRearrangeModules}
+          onCollectHack={handleCollectHack}
+          onClose={handleLootClose}
+        />
+      )}
+
       {/* Center Top Context Controller Button & Status Banner */}
-      {!isShopOpen && !isHackStoreOpen && (
+      {!isShopOpen && !isHackStoreOpen && !isLootOpen && (
         <OutcomeBanner
           gameState={gameState}
           probeData={probe.data}
@@ -461,6 +529,7 @@ export default function App() {
           onSelfDestruct={handleSelfDestruct}
           onNextSector={handleNextLevel}
           onResetProbe={handleResetLevel}
+          hasPendingLoot={pendingLoot.modules.length > 0 || pendingLoot.hacks.length > 0}
         />
       )}
 
