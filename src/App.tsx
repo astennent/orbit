@@ -583,6 +583,7 @@ export default function App() {
           activeModules={activeModules}
           activeHacks={activeHacks}
           onRearrange={handleRearrangeModules}
+          gameState={gameState}
         />
       </div>
 

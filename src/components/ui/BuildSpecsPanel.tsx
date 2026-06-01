@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { UpgradeEntry } from '../../types'
+import { UpgradeEntry, GameState } from '../../types'
 import { ModuleCartridge } from './ModuleCartridge'
 
 interface BuildSpecsPanelProps {
@@ -7,13 +7,15 @@ interface BuildSpecsPanelProps {
   activeModules: (UpgradeEntry | null)[]
   activeHacks: UpgradeEntry[]
   onRearrange?: (sourceIndex: number, targetIndex: number) => void
+  gameState?: GameState
 }
 
 export const BuildSpecsPanel: React.FC<BuildSpecsPanelProps> = ({
   dataCores,
   activeModules,
   activeHacks,
-  onRearrange
+  onRearrange,
+  gameState
 }) => {
   // Group identical active hacks together in the UI
   const groupedHacks = useMemo(() => {
@@ -149,6 +151,7 @@ export const BuildSpecsPanel: React.FC<BuildSpecsPanelProps> = ({
                 index={i}
                 context="hud"
                 onRearrange={onRearrange}
+                gameState={gameState}
               />
             ))}
           </div>

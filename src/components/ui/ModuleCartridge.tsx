@@ -1,5 +1,5 @@
 import React from 'react';
-import { UpgradeEntry, UpgradeId } from '../../types';
+import { UpgradeEntry, UpgradeId, GameState } from '../../types';
 import { UPGRADE_REGISTRY } from '../../constants/upgrades';
 
 interface ModuleCartridgeProps {
@@ -13,6 +13,7 @@ interface ModuleCartridgeProps {
   onRearrange?: (sourceIndex: number, targetIndex: number) => void;
   onSell?: (upgrade: UpgradeEntry, slotIndex: number) => void;
   setHoveredUpgrade?: (upgrade: UpgradeEntry | null) => void;
+  gameState?: GameState;
 }
 
 export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
@@ -25,7 +26,8 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
   onPurchase,
   onRearrange,
   onSell,
-  setHoveredUpgrade
+  setHoveredUpgrade,
+  gameState
 }) => {
   const isDraggable = mod ? (context === 'shop-shelf' ? (canAfford ? canAfford(mod.cost) : true) : true) : false;
 
@@ -52,6 +54,18 @@ export const ModuleCartridge: React.FC<ModuleCartridgeProps> = ({
     }, 100);
     return () => clearTimeout(timer);
   }, [pulseState]);
+
+  // Reset visual trigger flash states when the active mod/upgrade in this port changes
+  React.useEffect(() => {
+    setPulseState(null);
+  }, [mod]);
+
+  // Clear flashing animations immediately when transitioning out of FLIGHT (e.g. idle aiming, shopping, looting)
+  React.useEffect(() => {
+    if (gameState !== 'FLIGHT') {
+      setPulseState(null);
+    }
+  }, [gameState]);
 
   const renderTooltip = (item: UpgradeEntry, tooltipContext: 'hud' | 'shop-shelf' | 'shop-player') => {
     const refund = Math.floor(item.cost / 2);
