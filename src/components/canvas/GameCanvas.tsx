@@ -131,14 +131,76 @@ interface BeaconComponentProps {
   beacon: Beacon
   isHovered: boolean
   setHoveredBeaconId: (id: string | null) => void
+  planets: Planet[]
 }
 
-function BeaconComponent({ beacon: b, isHovered, setHoveredBeaconId }: BeaconComponentProps) {
+function BeaconComponent({ beacon: b, isHovered, setHoveredBeaconId, planets }: BeaconComponentProps) {
   const color = getBeaconColor(b.value)
+
+  // Dynamically compute the exit portal's warped height and grid normal vector to tilt orthogonal to the sloped grid
+  const orientation = useMemo(() => {
+    const eps = 0.05
+    const x = b.pos.x
+    const z = b.pos.z
+
+    const getDepthAt = (tx: number, tz: number) => {
+      let depth = 0
+      for (const p of planets) {
+        const dx = tx - p.pos.x
+        const dz = tz - p.pos.z
+        let dist = Math.sqrt(dx * dx + dz * dz)
+        if (!p.isGasGiant && dist < p.radius) {
+          dist = p.radius
+        }
+        const pull = (0.2 * p.mass) / (dist + 1.0)
+        depth -= pull
+      }
+      return Math.max(-8.0, depth)
+    }
+
+    const hCenter = getDepthAt(x, z)
+    const hX = getDepthAt(x + eps, z)
+    const hZ = getDepthAt(x, z + eps)
+
+    const dhdx = (hX - hCenter) / eps
+    const dhdz = (hZ - hCenter) / eps
+
+    // Normal vector is perpendicular to tangent vectors: N = (-dhdx, 1, -dhdz)
+    const normal = new THREE.Vector3(-dhdx, 1.0, -dhdz).normalize()
+
+    // Rotate standard up vector (0, 1, 0) to align with normal
+    const up = new THREE.Vector3(0, 1, 0)
+    const quaternion = new THREE.Quaternion().setFromUnitVectors(up, normal)
+
+    return { height: hCenter, quaternion }
+  }, [planets, b.pos.x, b.pos.z])
+
+  // Mathematically generate a clean 3D teardrop/droplet geometry via Lathe profile
+  const dropletGeometry = useMemo(() => {
+    const points = []
+    const segments = 12
+    for (let i = 0; i <= segments; i++) {
+      const t = i / segments
+      // Teardrop profile curve: y from -0.38 to 0.8
+      const y = -0.38 + t * 1.18
+      // Fat base, pinched top
+      const r = Math.sin(t * Math.PI) * (1.15 - t) * 0.45
+      points.push(new THREE.Vector2(r, y))
+    }
+    // 12 radial segments for a beautiful low-poly gem-like faceted droplet!
+    return new THREE.LatheGeometry(points, 12)
+  }, [])
+
+  const scaleX = b.radius * 1.85
+  const scaleY = b.radius * 2.15
+
+  // To make the base of the droplet (y = -0.38 locally) sit exactly at local Y = 0 (grid surface)
+  const yOffset = 0.38 * scaleY
 
   return (
     <group
-      position={b.pos}
+      position={[b.pos.x, orientation.height, b.pos.z]}
+      quaternion={orientation.quaternion}
       onPointerOver={(e) => {
         e.stopPropagation()
         setHoveredBeaconId(b.id)
@@ -148,45 +210,40 @@ function BeaconComponent({ beacon: b, isHovered, setHoveredBeaconId }: BeaconCom
         setHoveredBeaconId(null)
       }}
     >
-      {/* Outer translucent glass capsule shell */}
-      <mesh>
-        <sphereGeometry args={[b.radius * 0.95, 32, 32]} />
-        <meshStandardMaterial
+      {/* Fake light: glowing circular shadow projected flat on the grid below the stem */}
+      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0, b.radius * 1.0, 16]} />
+        <meshBasicMaterial
           color={color}
           transparent
-          opacity={0.25}
-          roughness={0.02}
-          metalness={0.0}
+          opacity={0.28}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
           side={THREE.DoubleSide}
         />
       </mesh>
 
-      {/* Solid nucleus core */}
-      <mesh>
-        <sphereGeometry args={[b.radius * 0.42, 32, 32]} />
+      {/* Glassy, metallic 3D faceted low-poly droplet */}
+      <mesh
+        geometry={dropletGeometry}
+        position={[0, yOffset, 0]}
+        scale={[scaleX, scaleY, scaleX]}
+      >
         <meshStandardMaterial
           color={color}
-          roughness={0.05}
-          metalness={0.95}
+          roughness={0.08}
+          metalness={0.85}
           emissive={color}
-          emissiveIntensity={0.8}
-        />
-      </mesh>
-
-      {/* Thin chrome equator ring */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[b.radius * 0.9, b.radius * 0.98, 32]} />
-        <meshStandardMaterial
-          color={color}
-          roughness={0.05}
-          metalness={0.95}
-          side={THREE.DoubleSide}
+          emissiveIntensity={0.65}
+          transparent={true}
+          opacity={0.8}
+          flatShading={true}
         />
       </mesh>
 
       {/* Dynamic scaled Hover Tooltip overlay */}
       {isHovered && (
-        <Html position={[0, b.radius + 1.8, 0]} center style={{ pointerEvents: 'none' }}>
+        <Html position={[0, yOffset + scaleY * 0.9, 0]} center style={{ pointerEvents: 'none' }}>
           <div className="tooltip-card" style={{ borderColor: color, boxShadow: `0 10px 30px rgba(0,0,0,0.8), 0 0 20px ${color}40` }}>
             <span className="badge data" style={{ background: color, color: '#000', textShadow: 'none', fontWeight: 'bold' }}>
               {b.value >= 35 ? 'PLANETARY BEACON' : 'DEEP SPACE BEACON'}
@@ -201,6 +258,144 @@ function BeaconComponent({ beacon: b, isHovered, setHoveredBeaconId }: BeaconCom
           </div>
         </Html>
       )}
+    </group>
+  )
+}
+
+interface WarpedSpaceGridProps {
+  planets: Planet[]
+}
+
+function WarpedSpaceGrid({ planets }: WarpedSpaceGridProps) {
+
+  const geometry = useMemo(() => {
+    // 140x140 area, 200x200 segments (ultra-high granularity wireframe backdrop)
+    const geo = new THREE.PlaneGeometry(140, 140, 200, 200)
+    const posAttr = geo.attributes.position
+
+    for (let i = 0; i < posAttr.count; i++) {
+      const x = posAttr.getX(i)
+      const y = posAttr.getY(i) // original Y in PlaneGeometry
+
+      // 1. Horizontally warp coordinates towards planet centers to adaptively cluster granularity
+      let warpedX = x
+      let warpedY = y
+
+      for (const p of planets) {
+        const dx = p.pos.x - x
+        const dy = -p.pos.z - y // PlaneGeometry Y increases upwards in X-Y plane, so we map to Z
+        const dist = Math.sqrt(dx * dx + dy * dy)
+
+        // Smooth horizontal pull: strongest near the planet, decays quickly outside (increased strength!)
+        const pullStrength = 0.42 * Math.min(0.65, (p.mass * 0.58) / (dist * dist + 8.0))
+        warpedX += dx * pullStrength
+        warpedY += dy * pullStrength
+      }
+
+      // 2. Project any vertices that lie inside solid rocky cores exactly onto their boundaries
+      // This completely prevents grid lines from cutting across the flat top face of the core cylinders!
+      for (const p of planets) {
+        if (p.isGasGiant) continue
+        const dx = warpedX - p.pos.x
+        const dy = warpedY - (-p.pos.z)
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        if (dist < p.radius) {
+          const scale = (p.radius * 1.002) / (dist + 0.0001)
+          warpedX = p.pos.x + dx * scale
+          warpedY = -p.pos.z + dy * scale
+        }
+      }
+
+      // Write horizontally warped coordinates back so grid lines visually bend ("space contraction lensing")
+      posAttr.setX(i, warpedX)
+      posAttr.setY(i, warpedY)
+
+      // 3. Compute depth based on warped coordinates
+      let depth = 0
+      for (const p of planets) {
+        const dx = warpedX - p.pos.x
+        const dz = -warpedY - p.pos.z
+        let dist = Math.sqrt(dx * dx + dz * dz)
+
+        // Clamp distance inside solid planet's radius to flatten grid bottoms
+        if (!p.isGasGiant && dist < p.radius) {
+          dist = p.radius
+        }
+
+        // General relativity gravity potential
+        const pull = (0.2 * p.mass) / (dist + 1.0)
+        depth -= pull
+      }
+
+      // Clamp max depth to keep grid within neat vertical clearance limits
+      depth = Math.max(-8.0, depth)
+
+      // Set the Z coordinate of PlaneGeometry (which is Y in our XZ world space after rotation)
+      posAttr.setZ(i, depth)
+    }
+
+    geo.computeVertexNormals()
+    return geo
+  }, [planets])
+
+  const gridLinesGeometry = useMemo(() => {
+    // 200 widthSegments and 200 heightSegments = 201x201 vertices.
+    const segmentsX = 200
+    const segmentsY = 200
+    const posAttr = geometry.attributes.position
+
+    const linePoints: number[] = []
+
+    // 1. Add horizontal line segments (connect vertex (col, row) to (col + 1, row))
+    for (let r = 0; r <= segmentsY; r++) {
+      for (let c = 0; c < segmentsX; c++) {
+        const idx1 = r * (segmentsX + 1) + c
+        const idx2 = idx1 + 1
+
+        linePoints.push(posAttr.getX(idx1), posAttr.getY(idx1), posAttr.getZ(idx1))
+        linePoints.push(posAttr.getX(idx2), posAttr.getY(idx2), posAttr.getZ(idx2))
+      }
+    }
+
+    // 2. Add vertical line segments (connect vertex (col, row) to (col, row + 1))
+    for (let c = 0; c <= segmentsX; c++) {
+      for (let r = 0; r < segmentsY; r++) {
+        const idx1 = r * (segmentsX + 1) + c
+        const idx2 = (r + 1) * (segmentsX + 1) + c
+
+        linePoints.push(posAttr.getX(idx1), posAttr.getY(idx1), posAttr.getZ(idx1))
+        linePoints.push(posAttr.getX(idx2), posAttr.getY(idx2), posAttr.getZ(idx2))
+      }
+    }
+
+    const geo = new THREE.BufferGeometry()
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(linePoints), 3))
+    return geo
+  }, [geometry])
+
+  return (
+    <group>
+      {/* Solid warped dark green terrain with flat shading */}
+      <mesh geometry={geometry} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
+        <meshStandardMaterial
+          color="#cde1d4"
+          roughness={0.7}
+          metalness={0.1}
+          flatShading={true}
+          transparent={false}
+          opacity={1.0}
+        />
+      </mesh>
+
+      {/* Retro neon wireframe grid overlay on top of the dark green terrain - Quads only (no diagonals!) */}
+      <lineSegments geometry={gridLinesGeometry} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+        <lineBasicMaterial
+          color="#003b41"
+          transparent
+          opacity={0.26}
+          depthWrite={false}
+        />
+      </lineSegments>
     </group>
   )
 }
@@ -300,6 +495,22 @@ export function GameCanvas({
     return Math.atan2(pullVector.x, pullVector.z)
   }, [pullVector])
 
+  // Dynamically calculate Launch Pad height using grid gravity equation
+  const launchPadHeight = useMemo(() => {
+    let depth = 0
+    for (const p of planets) {
+      const dx = aimStartPos.x - p.pos.x
+      const dz = aimStartPos.z - p.pos.z
+      let dist = Math.sqrt(dx * dx + dz * dz)
+      if (!p.isGasGiant && dist < p.radius) {
+        dist = p.radius
+      }
+      const pull = (0.2 * p.mass) / (dist + 1.0)
+      depth -= pull
+    }
+    return Math.max(-8.0, depth)
+  }, [planets, aimStartPos.x, aimStartPos.z])
+
   const powerSegments = useMemo(() => {
     if (!pullVector) return []
     const dir = pullVector.clone().normalize()
@@ -327,6 +538,20 @@ export function GameCanvas({
         color = '#ff9800' // Orange (moderate power: index 5-10)
       }
 
+      // Calculate depth at pos.x and pos.z
+      let depth = 0
+      for (const p of planets) {
+        const dx = pos.x - p.pos.x
+        const dz = pos.z - p.pos.z
+        let dist = Math.sqrt(dx * dx + dz * dz)
+        if (!p.isGasGiant && dist < p.radius) {
+          dist = p.radius
+        }
+        const pull = (0.2 * p.mass) / (dist + 1.0)
+        depth -= pull
+      }
+      pos.y = Math.max(-8.0, depth) + 0.02 // Offset slightly to sit flush above grid
+
       segList.push({
         id: `power-seg-${i}`,
         pos,
@@ -337,7 +562,7 @@ export function GameCanvas({
     }
 
     return segList
-  }, [pullVector, aimStartPos])
+  }, [pullVector, aimStartPos, planets])
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}>
@@ -358,6 +583,8 @@ export function GameCanvas({
         <ambientLight intensity={0.65} color="#b0c8f0" />
         {/* Powerful global sunlight to fully illuminate the entire sandbox map */}
         <directionalLight position={[30, 50, 30]} intensity={2.8} color="#ffffff" />
+        {/* Large central point light to beautifully illuminate the green grid with a wide radial falloff */}
+        <pointLight position={[0, 16, 0]} intensity={4.5} distance={150} decay={1.2} color="#f2fff5" />
 
         {/* Beautiful Particle Starfield */}
         <points>
@@ -375,9 +602,14 @@ export function GameCanvas({
           />
         </points>
 
+        {/* 3D Warped Gravity-Well space-time grid */}
+        <Suspense fallback={null}>
+          <WarpedSpaceGrid planets={planets} />
+        </Suspense>
+
         {/* Launch Pad Group */}
         <group
-          position={aimStartPos}
+          position={[aimStartPos.x, launchPadHeight + 0.02, aimStartPos.z]}
           onPointerOver={(e) => {
             if (gameState === 'IDLE' || gameState === 'LAUNCHING') {
               e.stopPropagation()
@@ -437,6 +669,7 @@ export function GameCanvas({
               beacon={b}
               isHovered={isHovered}
               setHoveredBeaconId={setHoveredBeaconId}
+              planets={planets}
             />
           )
         })}
@@ -444,24 +677,24 @@ export function GameCanvas({
         {/* Celestial Attractors (Planets) — Wrapped in Suspense to safely pre-load static texture maps */}
         <Suspense fallback={null}>
           {planets.map(p => (
-            <PlanetComponent key={p.id} planet={p} />
+            <PlanetComponent key={p.id} planet={p} planets={planets} />
           ))}
         </Suspense>
 
         {/* Scattered Asteroids — Wrapped in Suspense to safely pre-load static texture maps */}
         <Suspense fallback={null}>
           {asteroids && asteroids.map(a => (
-            a.health > 0 && <AsteroidComponent key={a.id} asteroid={a} />
+            a.health > 0 && <AsteroidComponent key={a.id} asteroid={a} planets={planets} />
           ))}
         </Suspense>
 
         {/* Homing Rocket Missiles */}
         {rockets && rockets.map(r => (
-          <RocketComponent key={r.id} rocket={r} />
+          <RocketComponent key={r.id} rocket={r} planets={planets} />
         ))}
 
         {/* The Target Exit Portal */}
-        <ExitPortalComponent portal={portal} />
+        <ExitPortalComponent portal={portal} planets={planets} />
 
         {/* Out of Bounds Red Warning Ring */}
         <mesh position={[0, -0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -509,15 +742,31 @@ export function GameCanvas({
         )}
 
         {/* Dynamic hardware-accelerated particle explosions on collisions */}
-        {explosions.map(expl => (
-          <ExplosionEffect
-            key={expl.id}
-            position={expl.pos}
-            color={expl.color}
-            count={expl.count}
-            onComplete={() => onExplosionComplete(expl.id)}
-          />
-        ))}
+        {explosions.map(expl => {
+          let depth = 0
+          for (const p of planets) {
+            const dx = expl.pos.x - p.pos.x
+            const dz = expl.pos.z - p.pos.z
+            let dist = Math.sqrt(dx * dx + dz * dz)
+            if (!p.isGasGiant && dist < p.radius) {
+              dist = p.radius
+            }
+            const pull = (0.2 * p.mass) / (dist + 1.0)
+            depth -= pull
+          }
+          const explosionHeight = Math.max(-8.0, depth)
+          const warpedPos = new THREE.Vector3(expl.pos.x, explosionHeight, expl.pos.z)
+
+          return (
+            <ExplosionEffect
+              key={expl.id}
+              position={warpedPos}
+              color={expl.color}
+              count={expl.count}
+              onComplete={() => onExplosionComplete(expl.id)}
+            />
+          )
+        })}
 
         {/* Immersive 3D Floating Data Toasts */}
         {toasts.map(toast => (

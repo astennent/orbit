@@ -1,29 +1,74 @@
-import { useRef } from 'react'
+import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { Rocket } from '../../types'
+import { Rocket, Planet } from '../../types'
 
 interface RocketComponentProps {
   rocket: Rocket
+  planets: Planet[]
 }
 
-export function RocketComponent({ rocket }: RocketComponentProps) {
+export function RocketComponent({ rocket, planets }: RocketComponentProps) {
   const groupRef = useRef<THREE.Group>(null)
+
+  // Pre-calculate the initial height of the rocket on mount/update to prevent single-frame flashes
+  const initialHeight = useMemo(() => {
+    let depth = 0
+    for (const p of planets) {
+      const dx = rocket.pos.x - p.pos.x
+      const dz = rocket.pos.z - p.pos.z
+      let dist = Math.sqrt(dx * dx + dz * dz)
+      if (!p.isGasGiant && dist < p.radius) {
+        dist = p.radius
+      }
+      const pull = (0.2 * p.mass) / (dist + 1.0)
+      depth -= pull
+    }
+    return Math.max(-8.0, depth)
+  }, [planets, rocket.pos.x, rocket.pos.z])
 
   useFrame(() => {
     if (groupRef.current) {
+      let depth = 0
+      for (const p of planets) {
+        const dx = rocket.pos.x - p.pos.x
+        const dz = rocket.pos.z - p.pos.z
+        let dist = Math.sqrt(dx * dx + dz * dz)
+        if (!p.isGasGiant && dist < p.radius) {
+          dist = p.radius
+        }
+        const pull = (0.2 * p.mass) / (dist + 1.0)
+        depth -= pull
+      }
+      const rocketHeight = Math.max(-8.0, depth)
+
       // Smoothly update position in 3D WebGL space directly
-      groupRef.current.position.copy(rocket.pos)
+      groupRef.current.position.set(rocket.pos.x, rocketHeight, rocket.pos.z)
 
       if (rocket.vel.length() > 0.01) {
         // Point group in the direction of travel in global space
-        groupRef.current.lookAt(rocket.pos.clone().add(rocket.vel))
+        // Look ahead along velocity and warp height to naturally tilt rocket along slopes
+        const targetPos = rocket.pos.clone().add(rocket.vel)
+        let targetDepth = 0
+        for (const p of planets) {
+          const dx = targetPos.x - p.pos.x
+          const dz = targetPos.z - p.pos.z
+          let dist = Math.sqrt(dx * dx + dz * dz)
+          if (!p.isGasGiant && dist < p.radius) {
+            dist = p.radius
+          }
+          const pull = (0.2 * p.mass) / (dist + 1.0)
+          targetDepth -= pull
+        }
+        const targetHeight = Math.max(-8.0, targetDepth)
+
+        groupRef.current.lookAt(new THREE.Vector3(targetPos.x, targetHeight, targetPos.z))
       }
     }
   })
 
   return (
-    <group ref={groupRef} position={rocket.pos}>
+    <group ref={groupRef} position={[rocket.pos.x, initialHeight, rocket.pos.z]}>
       {/* Main rocket body - rotated flat along the Z-axis (lookAt orientates Z) */}
       <group rotation={[Math.PI / 2, 0, 0]}>
         {/* Homing missile shell */}

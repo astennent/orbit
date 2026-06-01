@@ -2,13 +2,14 @@ import { useRef, useState, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
-import { Asteroid } from '../../types'
+import { Asteroid, Planet } from '../../types'
 
 interface AsteroidComponentProps {
   asteroid: Asteroid
+  planets: Planet[]
 }
 
-export function AsteroidComponent({ asteroid }: AsteroidComponentProps) {
+export function AsteroidComponent({ asteroid, planets }: AsteroidComponentProps) {
   const meshRef = useRef<THREE.Mesh>(null!)
   const [hovered, setHovered] = useState<boolean>(false)
 
@@ -88,8 +89,24 @@ export function AsteroidComponent({ asteroid }: AsteroidComponentProps) {
     return Math.ceil(asteroid.health)
   }
 
+  // Dynamically compute the asteroid's warped core height at its position on the grid
+  const asteroidHeight = useMemo(() => {
+    let depth = 0
+    for (const p of planets) {
+      const dx = asteroid.pos.x - p.pos.x
+      const dz = asteroid.pos.z - p.pos.z
+      let dist = Math.sqrt(dx * dx + dz * dz)
+      if (!p.isGasGiant && dist < p.radius) {
+        dist = p.radius
+      }
+      const pull = (0.2 * p.mass) / (dist + 1.0)
+      depth -= pull
+    }
+    return Math.max(-8.0, depth)
+  }, [planets, asteroid.pos.x, asteroid.pos.z])
+
   return (
-    <group position={asteroid.pos}>
+    <group position={[asteroid.pos.x, asteroidHeight, asteroid.pos.z]}>
       <mesh
         ref={meshRef}
         onPointerOver={(e) => {

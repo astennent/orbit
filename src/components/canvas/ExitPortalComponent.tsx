@@ -2,13 +2,14 @@ import { useRef, useState, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
-import { ExitPortal } from '../../types'
+import { ExitPortal, Planet } from '../../types'
 
 interface ExitPortalComponentProps {
   portal: ExitPortal
+  planets: Planet[]
 }
 
-export function ExitPortalComponent({ portal }: ExitPortalComponentProps) {
+export function ExitPortalComponent({ portal, planets }: ExitPortalComponentProps) {
   const outerHexRef = useRef<THREE.Mesh>(null!)
   const innerGlowRef = useRef<THREE.Mesh>(null!)
   const innerDiskRef = useRef<THREE.Mesh>(null!)
@@ -16,6 +17,36 @@ export function ExitPortalComponent({ portal }: ExitPortalComponentProps) {
   
   const pointsGeomRef = useRef<THREE.BufferGeometry>(null)
   const [hovered, setHovered] = useState<boolean>(false)
+
+  // Dynamically compute the exit portal's warped height (sampling 8 points along its outer radius to find the highest grid edge)
+  const portalHeight = useMemo(() => {
+    let maxDepth = -Infinity
+    const sampleRadius = portal.radius * 1.8 // Outer accretion disk radius
+
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * Math.PI) / 4
+      const sampleX = portal.pos.x + sampleRadius * Math.cos(angle)
+      const sampleZ = portal.pos.z + sampleRadius * Math.sin(angle)
+
+      let depth = 0
+      for (const p of planets) {
+        const dx = sampleX - p.pos.x
+        const dz = sampleZ - p.pos.z
+        let dist = Math.sqrt(dx * dx + dz * dz)
+        if (!p.isGasGiant && dist < p.radius) {
+          dist = p.radius
+        }
+        const pull = (0.2 * p.mass) / (dist + 1.0)
+        depth -= pull
+      }
+      depth = Math.max(-8.0, depth)
+      if (depth > maxDepth) {
+        maxDepth = depth
+      }
+    }
+    // Add a small safety offset (+0.08) to completely prevent any z-fighting or grid overlaps
+    return maxDepth + 0.08
+  }, [planets, portal.pos.x, portal.pos.z, portal.radius])
 
   // Pre-calculate Keplerian particle parameters in useMemo for maximum performance
   const particlesData = useMemo(() => {
@@ -141,7 +172,7 @@ export function ExitPortalComponent({ portal }: ExitPortalComponentProps) {
   })
 
   return (
-    <group position={portal.pos}>
+    <group position={[portal.pos.x, portalHeight, portal.pos.z]}>
       {/* Swirling Accretion Disk - Clockwise Inner Gold Halo */}
       <mesh ref={innerDiskRef} position={[0, -0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[portal.radius * 0.42, portal.radius * 1.2, 64]} />

@@ -195,33 +195,53 @@ function TrajectoryLineComponent({ startPos, startVel, planets, gameState }: Tra
       {segments.map((seg, idx) => {
         if (seg.points.length < 2) return null
 
-        // Format points for native ThreeJS Line component
-        const positions = new Float32Array(seg.points.flatMap(p => [p.x, p.y, p.z]))
-        const geometry = new THREE.BufferGeometry()
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+        // Format points for native ThreeJS Line component with dynamic gravity-well height warping
+        const warpedPositions = new Float32Array(seg.points.length * 3)
+        for (let i = 0; i < seg.points.length; i++) {
+          const pt = seg.points[i]
+          let depth = 0
+          for (const p of planets) {
+            const dx = pt.x - p.pos.x
+            const dz = pt.z - p.pos.z
+            let dist = Math.sqrt(dx * dx + dz * dz)
+            if (!p.isGasGiant && dist < p.radius) {
+              dist = p.radius
+            }
+            const pull = (0.2 * p.mass) / (dist + 1.0)
+            depth -= pull
+          }
+          depth = Math.max(-8.0, depth)
 
-        const baseOpacity = seg.inAtmosphere ? 0.35 : 0.8
+          warpedPositions[i * 3] = pt.x
+          warpedPositions[i * 3 + 1] = depth // Bends down into the wells in 3D!
+          warpedPositions[i * 3 + 2] = pt.z
+        }
+
+        const geometry = new THREE.BufferGeometry()
+        geometry.setAttribute('position', new THREE.BufferAttribute(warpedPositions, 3))
+
+        const baseOpacity = seg.inAtmosphere ? 0.65 : 0.9
 
         if (seg.inAtmosphere) {
-          // Inside gravity well: dotted (dashed) and faded purple/red
+          // Inside gravity well: faded dark crimson red
           return (
             <line key={idx} {...({ userData: { baseOpacity } } as any)}>
               <primitive object={geometry} attach="geometry" />
               <lineBasicMaterial
-                color="#ff4757"
+                color="#6e0a0d"
                 transparent
                 opacity={baseOpacity}
               />
             </line>
           )
         } else {
-          // In deep space: solid electric cyan
+          // In deep space: solid dark slate-teal
           return (
             <line key={idx} {...({ userData: { baseOpacity } } as any)}>
               <primitive object={geometry} attach="geometry" />
               <lineBasicMaterial
-                color="#00e5ff"
-                linewidth={2.5}
+                color="#003b41"
+                linewidth={3.5}
                 transparent
                 opacity={baseOpacity}
               />

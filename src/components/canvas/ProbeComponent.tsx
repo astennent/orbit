@@ -12,27 +12,47 @@ interface ProbeComponentProps {
 export function ProbeComponent({ probe, gameState, planets }: ProbeComponentProps) {
   const [hovered, setHovered] = useState<boolean>(false)
 
-  // Generate geometry for the flight history ribbon
+  // Generate geometry for the flight history ribbon with dynamic gravity-well height warping
   const lineGeometry = useMemo(() => {
     if (probe.trail.length < 2) return null
-    
-    // Extract x, y, z floats for the BufferAttribute
-    const positions = new Float32Array(probe.trail.flatMap(p => [p.x, p.y, p.z]))
 
-    // Generate color interpolation from pure black (oldest, transparent under additive blending) to pure white (newest)
+    // Warped XZ-plane coordinates mapped to 3D space-time grid
+    const warpedPositions = new Float32Array(probe.trail.length * 3)
+    for (let i = 0; i < probe.trail.length; i++) {
+      const pt = probe.trail[i]
+      let depth = 0
+      for (const p of planets) {
+        const dx = pt.x - p.pos.x
+        const dz = pt.z - p.pos.z
+        let dist = Math.sqrt(dx * dx + dz * dz)
+        if (!p.isGasGiant && dist < p.radius) {
+          dist = p.radius
+        }
+        const pull = (0.2 * p.mass) / (dist + 1.0)
+        depth -= pull
+      }
+      depth = Math.max(-8.0, depth)
+
+      warpedPositions[i * 3] = pt.x
+      warpedPositions[i * 3 + 1] = depth
+      warpedPositions[i * 3 + 2] = pt.z
+    }
+
+    // Generate color interpolation from light terrain color (#cde1d4) at oldest points to solid black at newest points
     const colors = new Float32Array(probe.trail.length * 3)
     for (let i = 0; i < probe.trail.length; i++) {
       const t = probe.trail.length > 1 ? i / (probe.trail.length - 1) : 1.0
-      colors[i * 3] = t     // Red
-      colors[i * 3 + 1] = t // Green
-      colors[i * 3 + 2] = t // Blue
+      // Interpolate from gray to solid black (#000000)
+      colors[i * 3] = (1 - t) * 0.204     // Red
+      colors[i * 3 + 1] = (1 - t) * 0.282 // Green
+      colors[i * 3 + 2] = (1 - t) * 0.231 // Blue
     }
 
     const geometry = new THREE.BufferGeometry()
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    geometry.setAttribute('position', new THREE.BufferAttribute(warpedPositions, 3))
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
     return geometry
-  }, [probe.trail])
+  }, [probe.trail, planets])
 
   // Determine core color based on state
   const getProbeColor = () => {
@@ -54,6 +74,22 @@ export function ProbeComponent({ probe, gameState, planets }: ProbeComponentProp
     })
   }, [planets, probe.pos])
 
+  // Dynamically compute the probe's warped height over the space-time grid
+  const probeHeight = useMemo(() => {
+    let depth = 0
+    for (const p of planets) {
+      const dx = probe.pos.x - p.pos.x
+      const dz = probe.pos.z - p.pos.z
+      let dist = Math.sqrt(dx * dx + dz * dz)
+      if (!p.isGasGiant && dist < p.radius) {
+        dist = p.radius
+      }
+      const pull = (0.2 * p.mass) / (dist + 1.0)
+      depth -= pull
+    }
+    return Math.max(-8.0, depth)
+  }, [planets, probe.pos.x, probe.pos.z])
+
   return (
     <group>
       {/* Flight trail / history solid neon ribbon */}
@@ -62,18 +98,17 @@ export function ProbeComponent({ probe, gameState, planets }: ProbeComponentProp
           <primitive object={lineGeometry} attach="geometry" />
           <lineBasicMaterial
             vertexColors
-            linewidth={3}
+            linewidth={3.5}
             transparent
-            opacity={0.5}
-            blending={THREE.AdditiveBlending}
+            opacity={0.85}
           />
         </line>
       )}
 
       {/* Hoverable Main Probe Group positioned at probe.pos */}
       {probe.integrity > 0 && (
-        <group 
-          position={probe.pos}
+        <group
+          position={[probe.pos.x, probeHeight, probe.pos.z]}
           onPointerOver={(e) => {
             e.stopPropagation()
             setHovered(true)
@@ -173,7 +208,7 @@ export function ProbeComponent({ probe, gameState, planets }: ProbeComponentProp
                     <strong>Plasma Shield:</strong> {probe.shieldLevel} SP ({probe.shieldDuration.toFixed(1)}s)
                   </div>
                 )}
-                
+
                 {isInsideAtmosphere && (
                   <div style={{
                     color: 'var(--glow-green)',
