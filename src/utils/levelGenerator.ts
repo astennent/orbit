@@ -165,9 +165,10 @@ export function generateBeacons(planets: Planet[]): Beacon[] {
       points.push({
         id: `dp-planet-${planet.id}-${i}`,
         pos: dpPos.clone(),
-        radius: 0.52, // slightly larger for visibility
+        radius: 0.65, // larger for planetary beacons (near gravity wells)
         value: randomValue,
-        collected: false
+        collected: false,
+        hue: Math.floor(Math.random() * 360)
       });
     }
   }
@@ -198,9 +199,10 @@ export function generateBeacons(planets: Planet[]): Beacon[] {
     points.push({
       id: `dp-space-${i}`,
       pos: dpPos.clone(),
-      radius: 0.38, // slightly smaller
+      radius: 0.38,
       value: randomValue,
-      collected: false
+      collected: false,
+      hue: Math.floor(Math.random() * 360)
     });
   }
 

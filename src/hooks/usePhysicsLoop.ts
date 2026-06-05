@@ -4,7 +4,7 @@ import { Probe, Planet, ExitPortal, Beacon, Asteroid, DataToast, GameState, Modu
 import { UPGRADE_REGISTRY, MODULES_REGISTRY, HACKS_REGISTRY } from '../constants/upgrades'
 import { handleTrigger, executeModuleEffect } from '../utils/moduleEffects'
 import { createFreshProbe, applyDamage } from '../utils/probeUtils'
-import { getBeaconColor } from '../utils/statusFormatters'
+import { getBeaconColor, getTrailInkRgb } from '../utils/statusFormatters'
 import {
   GRAVITATIONAL_CONSTANT,
   ATMOSPHERE_DRAG,
@@ -92,6 +92,18 @@ export function usePhysicsLoop({
   const slotTimersRef = useRef<number[]>([0, 0, 0, 0, 0, 0])
   const slotTimersInitializedRef = useRef<boolean>(false)
   const flightTimeRef = useRef<number>(0)
+
+  // Ink trail color state — tracks the target ink color from beacon collection
+  // targetHue: the hue to fade toward (set on beacon collection)
+  // targetTime: when the target color should be fully reached (now + 0.2s)
+  // fadeStartTime: when the fade back to black begins (targetTime)
+  // fadeDuration: how long to fade back to black (4s)
+  const inkTargetHueRef = useRef<number | null>(null)
+  const inkTargetTimeRef = useRef<number>(0)
+  const inkFadeStartRef = useRef<number>(0)
+  const inkStartColorRef = useRef<{ r: number; g: number; b: number }>({ r: 0, g: 0, b: 0 })
+  const INK_RAMP_UP = 0.3 // seconds to reach target color
+  const INK_FADE_OUT = 3.0 // seconds to fade back to black
 
   const triggerDataToast = (text: string, pos: THREE.Vector3, color?: string) => {
     const newToast: DataToast = {
@@ -549,10 +561,36 @@ export function usePhysicsLoop({
 
       const lastTrailPt = pState.trail[pState.trail.length - 1]
       if (!lastTrailPt || lastTrailPt.distanceTo(pState.pos) > 0.08) {
+        // Compute the current ink trail color based on ink state
+        let trailR = 0, trailG = 0, trailB = 0
+        const now = flightTimeRef.current
+        if (inkTargetHueRef.current !== null) {
+          const ink = getTrailInkRgb(inkTargetHueRef.current)
+          if (now < inkTargetTimeRef.current) {
+            // Ramping up from startColor to target color
+            const t = Math.max(0, Math.min(1, 1 - (inkTargetTimeRef.current - now) / INK_RAMP_UP))
+            trailR = inkStartColorRef.current.r + (ink.r - inkStartColorRef.current.r) * t
+            trailG = inkStartColorRef.current.g + (ink.g - inkStartColorRef.current.g) * t
+            trailB = inkStartColorRef.current.b + (ink.b - inkStartColorRef.current.b) * t
+          } else {
+            // Fading from target color back to black
+            const elapsed = now - inkFadeStartRef.current
+            const t = Math.max(0, 1 - elapsed / INK_FADE_OUT)
+            trailR = ink.r * t
+            trailG = ink.g * t
+            trailB = ink.b * t
+            if (t <= 0) {
+              inkTargetHueRef.current = null // Done fading
+            }
+          }
+        }
+
         pState.trail.push(pState.pos.clone())
+        pState.trailColors.push({ r: trailR, g: trailG, b: trailB })
         // Large safety cap to allow rendering the entire flight while protecting memory profiles
         if (pState.trail.length > 15000) {
           pState.trail.shift()
+          pState.trailColors.shift()
         }
       }
 
@@ -569,8 +607,37 @@ export function usePhysicsLoop({
           dataUpdated = true
           const addedData = dp.value;
           pState.data += addedData;
-          const color = getBeaconColor(addedData);
+          const color = getBeaconColor(dp.hue);
           triggerDataToast(`+${addedData.toFixed(0)} Data`, dp.pos, color);
+
+          // Compute actual current color at this exact moment in flight before updating refs
+          const now = flightTimeRef.current
+          const currentInkColor = (() => {
+            if (inkTargetHueRef.current === null) return { r: 0, g: 0, b: 0 }
+            const ink = getTrailInkRgb(inkTargetHueRef.current)
+            if (now < inkTargetTimeRef.current) {
+              const t = Math.max(0, Math.min(1, 1 - (inkTargetTimeRef.current - now) / INK_RAMP_UP))
+              return {
+                r: inkStartColorRef.current.r + (ink.r - inkStartColorRef.current.r) * t,
+                g: inkStartColorRef.current.g + (ink.g - inkStartColorRef.current.g) * t,
+                b: inkStartColorRef.current.b + (ink.b - inkStartColorRef.current.b) * t,
+              }
+            } else {
+              const elapsed = now - inkFadeStartRef.current
+              const t = Math.max(0, 1 - elapsed / INK_FADE_OUT)
+              return {
+                r: ink.r * t,
+                g: ink.g * t,
+                b: ink.b * t,
+              }
+            }
+          })()
+
+          // Set ink trail color target, using current color as starting point
+          inkStartColorRef.current = currentInkColor
+          inkTargetHueRef.current = dp.hue
+          inkTargetTimeRef.current = now + INK_RAMP_UP
+          inkFadeStartRef.current = now + INK_RAMP_UP
 
           // Dispatch HIT_BEACON
           dispatchTrigger(TriggerId.HIT_BEACON, pState);
@@ -652,7 +719,7 @@ export function usePhysicsLoop({
       for (const rocket of rocketsRef.current) {
         // Find target asteroid
         let targetAst = tempAsteroids.find(ast => ast.id === rocket.targetAsteroidId && ast.health > 0)
-        
+
         let targetAsteroidId = rocket.targetAsteroidId
         if (!targetAst) {
           // Re-lock nearest

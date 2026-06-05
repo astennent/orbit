@@ -13,13 +13,26 @@ export function ProbeComponent({ probe, gameState, planets }: ProbeComponentProp
   const [hovered, setHovered] = useState<boolean>(false)
 
   // Generate geometry for the flight history ribbon with dynamic gravity-well height warping
-  const lineGeometry = useMemo(() => {
+  // Uses a flat ribbon (quad-strip) mesh instead of WebGL line primitives because
+  // linewidth is capped at 1px on most GPUs, making trails invisible.
+  const ribbonGeometry = useMemo(() => {
     if (probe.trail.length < 2) return null
 
-    // Warped XZ-plane coordinates mapped to 3D space-time grid
-    const warpedPositions = new Float32Array(probe.trail.length * 3)
-    for (let i = 0; i < probe.trail.length; i++) {
+    const HALF_WIDTH = 0.05 // Half-width of the ribbon in world units
+
+    const count = probe.trail.length
+    // Each segment between two trail points = 2 triangles = 6 indices
+    const vertCount = count * 2
+    const triCount = (count - 1) * 2
+
+    const positions = new Float32Array(vertCount * 3)
+    const colors = new Float32Array(vertCount * 3)
+    const indices = new Uint32Array(triCount * 3)
+
+    for (let i = 0; i < count; i++) {
       const pt = probe.trail[i]
+
+      // Compute warped Y height
       let depth = 0
       for (const p of planets) {
         const dx = pt.x - p.pos.x
@@ -31,28 +44,71 @@ export function ProbeComponent({ probe, gameState, planets }: ProbeComponentProp
         const pull = (0.2 * p.mass) / (dist + 1.0)
         depth -= pull
       }
-      depth = Math.max(-8.0, depth)
+      depth = Math.max(-8.0, depth) + 0.02 // Slight offset above grid
 
-      warpedPositions[i * 3] = pt.x
-      warpedPositions[i * 3 + 1] = depth
-      warpedPositions[i * 3 + 2] = pt.z
+      // Compute perpendicular direction for ribbon width
+      let perpX = 0, perpZ = 0
+      if (i < count - 1) {
+        const next = probe.trail[i + 1]
+        const dx = next.x - pt.x
+        const dz = next.z - pt.z
+        const len = Math.sqrt(dx * dx + dz * dz) || 1
+        perpX = -dz / len
+        perpZ = dx / len
+      } else if (i > 0) {
+        const prev = probe.trail[i - 1]
+        const dx = pt.x - prev.x
+        const dz = pt.z - prev.z
+        const len = Math.sqrt(dx * dx + dz * dz) || 1
+        perpX = -dz / len
+        perpZ = dx / len
+      }
+
+      // Left vertex
+      const li = i * 2
+      positions[li * 3] = pt.x + perpX * HALF_WIDTH
+      positions[li * 3 + 1] = depth
+      positions[li * 3 + 2] = pt.z + perpZ * HALF_WIDTH
+
+      // Right vertex
+      const ri = i * 2 + 1
+      positions[ri * 3] = pt.x - perpX * HALF_WIDTH
+      positions[ri * 3 + 1] = depth
+      positions[ri * 3 + 2] = pt.z - perpZ * HALF_WIDTH
+
+      // Use ink color from trailColors, otherwise fall back to gradient
+      let r = 0, g = 0, b = 0
+      if (probe.trailColors && probe.trailColors[i]) {
+        r = probe.trailColors[i].r
+        g = probe.trailColors[i].g
+        b = probe.trailColors[i].b
+      } else {
+        const t = count > 1 ? i / (count - 1) : 1.0
+        r = (1 - t) * 0.204
+        g = (1 - t) * 0.282
+        b = (1 - t) * 0.231
+      }
+      colors[li * 3] = r; colors[li * 3 + 1] = g; colors[li * 3 + 2] = b
+      colors[ri * 3] = r; colors[ri * 3 + 1] = g; colors[ri * 3 + 2] = b
     }
 
-    // Generate color interpolation from light terrain color (#cde1d4) at oldest points to solid black at newest points
-    const colors = new Float32Array(probe.trail.length * 3)
-    for (let i = 0; i < probe.trail.length; i++) {
-      const t = probe.trail.length > 1 ? i / (probe.trail.length - 1) : 1.0
-      // Interpolate from gray to solid black (#000000)
-      colors[i * 3] = (1 - t) * 0.204     // Red
-      colors[i * 3 + 1] = (1 - t) * 0.282 // Green
-      colors[i * 3 + 2] = (1 - t) * 0.231 // Blue
+    // Build triangle indices for the quad strip
+    for (let i = 0; i < count - 1; i++) {
+      const bl = i * 2
+      const br = i * 2 + 1
+      const tl = (i + 1) * 2
+      const tr = (i + 1) * 2 + 1
+      const idx = i * 6
+      indices[idx] = bl; indices[idx + 1] = tl; indices[idx + 2] = br
+      indices[idx + 3] = br; indices[idx + 4] = tl; indices[idx + 5] = tr
     }
 
     const geometry = new THREE.BufferGeometry()
-    geometry.setAttribute('position', new THREE.BufferAttribute(warpedPositions, 3))
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1))
     return geometry
-  }, [probe.trail, planets])
+  }, [probe.trail, probe.trailColors, planets])
 
   // Determine core color based on state
   const getProbeColor = () => {
@@ -92,17 +148,18 @@ export function ProbeComponent({ probe, gameState, planets }: ProbeComponentProp
 
   return (
     <group>
-      {/* Flight trail / history solid neon ribbon */}
-      {lineGeometry && (
-        <line>
-          <primitive object={lineGeometry} attach="geometry" />
-          <lineBasicMaterial
+      {/* Flight trail / history ribbon mesh */}
+      {ribbonGeometry && (
+        <mesh>
+          <primitive object={ribbonGeometry} attach="geometry" />
+          <meshBasicMaterial
             vertexColors
-            linewidth={3.5}
             transparent
             opacity={0.85}
+            side={THREE.DoubleSide}
+            depthWrite={false}
           />
-        </line>
+        </mesh>
       )}
 
       {/* Hoverable Main Probe Group positioned at probe.pos */}

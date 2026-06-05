@@ -135,7 +135,7 @@ interface BeaconComponentProps {
 }
 
 function BeaconComponent({ beacon: b, isHovered, setHoveredBeaconId, planets }: BeaconComponentProps) {
-  const color = getBeaconColor(b.value)
+  const color = getBeaconColor(b.hue)
 
   // Dynamically compute the exit portal's warped height and grid normal vector to tilt orthogonal to the sloped grid
   const orientation = useMemo(() => {

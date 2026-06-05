@@ -19,6 +19,7 @@ export function createFreshProbe(
     vel: vel.clone(),
     data: 0,
     trail: trail.map(p => p.clone()),
+    trailColors: trail.map(() => ({ r: 0, g: 0, b: 0 })),
     integrity: 10,
     maxIntegrity: 10,
     magnetRadius: DEFAULT_MAGNET_RADIUS,

@@ -46,6 +46,7 @@ export interface Probe {
   vel: THREE.Vector3;
   data: number;
   trail: THREE.Vector3[];
+  trailColors: { r: number; g: number; b: number }[];
   integrity: number;
   maxIntegrity: number;
   magnetRadius: number;
@@ -77,6 +78,7 @@ export interface Beacon {
   radius: number;
   value: number;
   collected: boolean;
+  hue: number; // Random hue (0-360) for ink color
 }
 
 export interface DataToast {
